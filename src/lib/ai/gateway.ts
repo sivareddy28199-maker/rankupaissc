@@ -2,7 +2,7 @@ import type { AiProvider, CompletionRequest, CompletionResult } from "./types";
 import { AiUnavailableError } from "./types";
 
 const GATEWAY_URL = "https://ai.gateway.lovable.dev/v1/chat/completions";
-const DEFAULT_MODEL = "google/gemini-3.5-flash";
+const DEFAULT_MODEL = "openai/gpt-5.6-sol";
 
 /** Built-in hosted provider. Used as primary until Ox Alpha credentials exist. */
 export const gatewayProvider: AiProvider = {
@@ -23,7 +23,7 @@ export const gatewayProvider: AiProvider = {
       body: JSON.stringify({
         model,
         messages: request.messages,
-        temperature: request.temperature ?? 0.4,
+        reasoning_effort: "none",
         ...(request.json ? { response_format: { type: "json_object" } } : {}),
       }),
     });
@@ -31,8 +31,10 @@ export const gatewayProvider: AiProvider = {
     if (response.status === 429) {
       throw new AiUnavailableError("AI is busy right now. Please try again in a moment.");
     }
-    if (response.status === 402) {
-      throw new AiUnavailableError("The AI workspace has run out of credits.");
+    if (response.status === 402 || response.status === 403) {
+      throw new AiUnavailableError(
+        "AI credits are exhausted for this workspace. Please top up to continue.",
+      );
     }
     if (!response.ok) {
       throw new AiUnavailableError(`AI provider responded with status ${response.status}.`);
