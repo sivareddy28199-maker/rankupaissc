@@ -117,3 +117,65 @@ export async function buildLearnerContext(supabase: Db, userId: string): Promise
       .map((r) => `${r.name} (${Math.round(r.acc)}%)`),
   };
 }
+
+import { z } from "zod";
+import { AiUnavailableError } from "./ai/types";
+
+export function toClientError(error: unknown): Error {
+  if (error instanceof AiLimitError || error instanceof AiUnavailableError) {
+    return new Error(error.message);
+  }
+  console.error("[ai] unexpected failure", error);
+  return new Error("Something went wrong while contacting the AI. Please try again.");
+}
+
+/** Budget check + provider call + usage logging + safe error mapping. */
+export async function guarded<T>(
+  supabase: Db,
+  userId: string,
+  capability: string,
+  work: () => Promise<{ result: T; provider: string; model: string; tokensUsed: number }>,
+): Promise<T> {
+  try {
+    await assertWithinAiBudget(supabase, userId);
+    const { result, provider, model, tokensUsed } = await work();
+    await logGeneration(supabase, userId, {
+      capability,
+      provider,
+      model,
+      tokensUsed,
+      success: true,
+    });
+    return result;
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "unknown error";
+    if (!(error instanceof AiLimitError)) {
+      await logGeneration(supabase, userId, {
+        capability,
+        provider: "chain",
+        success: false,
+        errorMessage: message,
+      }).catch(() => undefined);
+    }
+    throw toClientError(error);
+  }
+}
+
+const GeneratedQuestion = z.object({
+  question_text: z.string().min(5),
+  options: z.array(z.string().min(1)).length(4),
+  correct_answer: z.string().min(1),
+  explanation: z.string().min(3),
+  difficulty: z.enum(["easy", "medium", "hard"]).catch("medium"),
+});
+
+export type ValidatedQuestion = z.infer<typeof GeneratedQuestion>;
+
+/** Never trust AI structured output: validate shape and answer consistency. */
+export function validateGeneratedQuestions(items: unknown[]): ValidatedQuestion[] {
+  return items
+    .map((q) => GeneratedQuestion.safeParse(q))
+    .filter((r): r is { success: true; data: ValidatedQuestion } => r.success)
+    .map((r) => r.data)
+    .filter((q) => q.options.includes(q.correct_answer));
+}

@@ -12,41 +12,7 @@ import {
   TUTOR_SYSTEM,
   learnerBrief,
 } from "./ai/prompts";
-import { AiLimitError, AiUnavailableError } from "./ai/types";
-import { assertWithinAiBudget, buildLearnerContext, logGeneration } from "./ai.server";
-
-function toClientError(error: unknown): Error {
-  if (error instanceof AiLimitError || error instanceof AiUnavailableError) {
-    return new Error(error.message);
-  }
-  console.error("[ai] unexpected failure", error);
-  return new Error("Something went wrong while contacting the AI. Please try again.");
-}
-
-async function guarded<T>(
-  supabase: any,
-  userId: string,
-  capability: string,
-  work: () => Promise<{ result: T; provider: string; model: string; tokensUsed: number }>,
-): Promise<T> {
-  try {
-    await assertWithinAiBudget(supabase, userId);
-    const { result, provider, model, tokensUsed } = await work();
-    await logGeneration(supabase, userId, { capability, provider, model, tokensUsed, success: true });
-    return result;
-  } catch (error) {
-    const message = error instanceof Error ? error.message : "unknown error";
-    if (!(error instanceof AiLimitError)) {
-      await logGeneration(supabase, userId, {
-        capability,
-        provider: "chain",
-        success: false,
-        errorMessage: message,
-      }).catch(() => undefined);
-    }
-    throw toClientError(error);
-  }
-}
+import { buildLearnerContext, guarded, validateGeneratedQuestions } from "./ai.server";
 
 /** Current AI usage + provider status for the signed-in learner. */
 export const getAiStatus = createServerFn({ method: "GET" })
@@ -210,14 +176,6 @@ export const generateNotes = createServerFn({ method: "POST" })
     return note;
   });
 
-const GeneratedQuestion = z.object({
-  question_text: z.string().min(5),
-  options: z.array(z.string().min(1)).length(4),
-  correct_answer: z.string().min(1),
-  explanation: z.string().min(3),
-  difficulty: z.enum(["easy", "medium", "hard"]).catch("medium"),
-});
-
 /** AI question generator — output is validated before it is trusted or saved. */
 export const generateQuestions = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -260,11 +218,7 @@ export const generateQuestions = createServerFn({ method: "POST" })
       throw new Error("The AI returned questions in an unreadable format. Try again.");
     }
 
-    const valid = (parsed.questions ?? [])
-      .map((q) => GeneratedQuestion.safeParse(q))
-      .filter((r) => r.success)
-      .map((r) => (r as { data: z.infer<typeof GeneratedQuestion> }).data)
-      .filter((q) => q.options.includes(q.correct_answer));
+    const valid = validateGeneratedQuestions(parsed.questions ?? []);
 
     if (valid.length === 0) {
       throw new Error("The AI could not produce valid questions this time. Please retry.");
