@@ -52,19 +52,19 @@ function AuthPage() {
     if (busy) return;
 
     if (forgot) {
-      if (!email) return toast.error("Enter your email first.");
+      if (!email) { toast.error("Enter your email first."); return; }
       setBusy(true);
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
         redirectTo: `${window.location.origin}/auth/reset`,
       });
       setBusy(false);
-      if (error) return toast.error(error.message);
+      if (error) { toast.error(error.message); return; }
       toast.success("Password reset link sent. Check your inbox.");
       setForgot(false);
       return;
     }
 
-    if (password.length < 6) return toast.error("Password must be at least 6 characters.");
+    if (password.length < 6) { toast.error("Password must be at least 6 characters."); return; }
     setBusy(true);
 
     if (mode === "signup") {
@@ -77,7 +77,7 @@ function AuthPage() {
         },
       });
       setBusy(false);
-      if (error) return toast.error(error.message);
+      if (error) { toast.error(error.message); return; }
       const { data: session } = await supabase.auth.getSession();
       if (session.session) {
         toast.success("Account created. Welcome to RankUp AI.");
@@ -91,7 +91,7 @@ function AuthPage() {
 
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     setBusy(false);
-    if (error) return toast.error(error.message);
+    if (error) { toast.error(error.message); return; }
     navigate({ to: "/dashboard", replace: true });
   }
 
