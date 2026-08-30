@@ -12,8 +12,13 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as AuthRouteImport } from './routes/auth'
+import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
+import { Route as AuthenticatedCoachRouteImport } from './routes/_authenticated/coach'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedPracticeRouteImport } from './routes/_authenticated/practice'
+import { Route as AuthenticatedProfileRouteImport } from './routes/_authenticated/profile'
+import { Route as AuthenticatedProgressRouteImport } from './routes/_authenticated/progress'
+import { Route as AuthenticatedRevisionRouteImport } from './routes/_authenticated/revision'
 import { Route as AuthResetRouteImport } from './routes/auth.reset'
 import { Route as AuthenticatedResultsAttemptIdRouteImport } from './routes/_authenticated/results.$attemptId'
 import { Route as AuthenticatedTestsIndexRouteImport } from './routes/_authenticated/tests.index'
@@ -33,6 +38,16 @@ const AuthRoute = AuthRouteImport.update({
   path: '/auth',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedAdminRoute = AuthenticatedAdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedCoachRoute = AuthenticatedCoachRouteImport.update({
+  id: '/coach',
+  path: '/coach',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
@@ -41,6 +56,21 @@ const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
 const AuthenticatedPracticeRoute = AuthenticatedPracticeRouteImport.update({
   id: '/practice',
   path: '/practice',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedProfileRoute = AuthenticatedProfileRouteImport.update({
+  id: '/profile',
+  path: '/profile',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedProgressRoute = AuthenticatedProgressRouteImport.update({
+  id: '/progress',
+  path: '/progress',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedRevisionRoute = AuthenticatedRevisionRouteImport.update({
+  id: '/revision',
+  path: '/revision',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthResetRoute = AuthResetRouteImport.update({
@@ -69,8 +99,13 @@ const AuthenticatedTestsTestIdRoute =
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRouteWithChildren
+  '/admin': typeof AuthenticatedAdminRoute
+  '/coach': typeof AuthenticatedCoachRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/practice': typeof AuthenticatedPracticeRoute
+  '/profile': typeof AuthenticatedProfileRoute
+  '/progress': typeof AuthenticatedProgressRoute
+  '/revision': typeof AuthenticatedRevisionRoute
   '/auth/reset': typeof AuthResetRoute
   '/results/$attemptId': typeof AuthenticatedResultsAttemptIdRoute
   '/tests/$testId': typeof AuthenticatedTestsTestIdRoute
@@ -79,8 +114,13 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRouteWithChildren
+  '/admin': typeof AuthenticatedAdminRoute
+  '/coach': typeof AuthenticatedCoachRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/practice': typeof AuthenticatedPracticeRoute
+  '/profile': typeof AuthenticatedProfileRoute
+  '/progress': typeof AuthenticatedProgressRoute
+  '/revision': typeof AuthenticatedRevisionRoute
   '/auth/reset': typeof AuthResetRoute
   '/results/$attemptId': typeof AuthenticatedResultsAttemptIdRoute
   '/tests/$testId': typeof AuthenticatedTestsTestIdRoute
@@ -91,8 +131,13 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRouteWithChildren
+  '/_authenticated/admin': typeof AuthenticatedAdminRoute
+  '/_authenticated/coach': typeof AuthenticatedCoachRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/practice': typeof AuthenticatedPracticeRoute
+  '/_authenticated/profile': typeof AuthenticatedProfileRoute
+  '/_authenticated/progress': typeof AuthenticatedProgressRoute
+  '/_authenticated/revision': typeof AuthenticatedRevisionRoute
   '/auth/reset': typeof AuthResetRoute
   '/_authenticated/results/$attemptId': typeof AuthenticatedResultsAttemptIdRoute
   '/_authenticated/tests/$testId': typeof AuthenticatedTestsTestIdRoute
@@ -103,8 +148,13 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/auth'
+    | '/admin'
+    | '/coach'
     | '/dashboard'
     | '/practice'
+    | '/profile'
+    | '/progress'
+    | '/revision'
     | '/auth/reset'
     | '/results/$attemptId'
     | '/tests/$testId'
@@ -113,8 +163,13 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/auth'
+    | '/admin'
+    | '/coach'
     | '/dashboard'
     | '/practice'
+    | '/profile'
+    | '/progress'
+    | '/revision'
     | '/auth/reset'
     | '/results/$attemptId'
     | '/tests/$testId'
@@ -124,8 +179,13 @@ export interface FileRouteTypes {
     | '/'
     | '/_authenticated'
     | '/auth'
+    | '/_authenticated/admin'
+    | '/_authenticated/coach'
     | '/_authenticated/dashboard'
     | '/_authenticated/practice'
+    | '/_authenticated/profile'
+    | '/_authenticated/progress'
+    | '/_authenticated/revision'
     | '/auth/reset'
     | '/_authenticated/results/$attemptId'
     | '/_authenticated/tests/$testId'
@@ -161,6 +221,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated/admin': {
+      id: '/_authenticated/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AuthenticatedAdminRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/coach': {
+      id: '/_authenticated/coach'
+      path: '/coach'
+      fullPath: '/coach'
+      preLoaderRoute: typeof AuthenticatedCoachRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/dashboard': {
       id: '/_authenticated/dashboard'
       path: '/dashboard'
@@ -173,6 +247,27 @@ declare module '@tanstack/react-router' {
       path: '/practice'
       fullPath: '/practice'
       preLoaderRoute: typeof AuthenticatedPracticeRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/profile': {
+      id: '/_authenticated/profile'
+      path: '/profile'
+      fullPath: '/profile'
+      preLoaderRoute: typeof AuthenticatedProfileRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/progress': {
+      id: '/_authenticated/progress'
+      path: '/progress'
+      fullPath: '/progress'
+      preLoaderRoute: typeof AuthenticatedProgressRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/revision': {
+      id: '/_authenticated/revision'
+      path: '/revision'
+      fullPath: '/revision'
+      preLoaderRoute: typeof AuthenticatedRevisionRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/auth/reset': {
@@ -207,16 +302,26 @@ declare module '@tanstack/react-router' {
 }
 
 interface AuthenticatedRouteRouteChildren {
+  AuthenticatedAdminRoute: typeof AuthenticatedAdminRoute
+  AuthenticatedCoachRoute: typeof AuthenticatedCoachRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedPracticeRoute: typeof AuthenticatedPracticeRoute
+  AuthenticatedProfileRoute: typeof AuthenticatedProfileRoute
+  AuthenticatedProgressRoute: typeof AuthenticatedProgressRoute
+  AuthenticatedRevisionRoute: typeof AuthenticatedRevisionRoute
   AuthenticatedResultsAttemptIdRoute: typeof AuthenticatedResultsAttemptIdRoute
   AuthenticatedTestsTestIdRoute: typeof AuthenticatedTestsTestIdRoute
   AuthenticatedTestsIndexRoute: typeof AuthenticatedTestsIndexRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedAdminRoute: AuthenticatedAdminRoute,
+  AuthenticatedCoachRoute: AuthenticatedCoachRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedPracticeRoute: AuthenticatedPracticeRoute,
+  AuthenticatedProfileRoute: AuthenticatedProfileRoute,
+  AuthenticatedProgressRoute: AuthenticatedProgressRoute,
+  AuthenticatedRevisionRoute: AuthenticatedRevisionRoute,
   AuthenticatedResultsAttemptIdRoute: AuthenticatedResultsAttemptIdRoute,
   AuthenticatedTestsTestIdRoute: AuthenticatedTestsTestIdRoute,
   AuthenticatedTestsIndexRoute: AuthenticatedTestsIndexRoute,
