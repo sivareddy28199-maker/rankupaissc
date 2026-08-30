@@ -39,9 +39,9 @@ function RevisionPage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("revision_items")
-        .select(`id, user_id, question_id, due_at, questions(${QUESTION_SELECT})`)
-        .lte("due_at", new Date().toISOString())
-        .order("due_at")
+        .select(`id, user_id, question_id, next_review_date, questions(${QUESTION_SELECT})`)
+        .lte("next_review_date", new Date().toISOString().slice(0, 10))
+        .order("next_review_date")
         .limit(30);
       if (error) throw error;
       return data;
@@ -53,7 +53,7 @@ function RevisionPage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("bookmarks")
-        .select(`id, note, questions(${QUESTION_SELECT})`)
+        .select(`id, questions(${QUESTION_SELECT})`)
         .order("created_at", { ascending: false })
         .limit(50);
       if (error) throw error;
@@ -90,7 +90,7 @@ function RevisionPage() {
                   total={due.data.length}
                   question={(item as any).questions as QuestionShape}
                   onGrade={async (correct) => {
-                    await scheduleRevision((item as any).user_id, item.question_id, correct);
+                    await scheduleRevision((item as any).user_id, (item as any).question_id, correct);
                     void queryClient.invalidateQueries({ queryKey: ["revision-due"] });
                   }}
                 />

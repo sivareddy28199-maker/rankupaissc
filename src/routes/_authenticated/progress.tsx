@@ -38,7 +38,7 @@ function ProgressPage() {
           .limit(1000),
         supabase
           .from("daily_goals")
-          .select("goal_date, questions_done, minutes_studied, completed")
+          .select("goal_date, questions_done, minutes_done, question_goal")
           .eq("user_id", userId)
           .order("goal_date", { ascending: false })
           .limit(14),
@@ -80,7 +80,7 @@ function ProgressPage() {
     bySubject.set(name, acc);
   }
 
-  const minutes = stats.data!.goals.reduce((sum, g) => sum + (g.minutes_studied ?? 0), 0);
+  const minutes = stats.data!.goals.reduce((sum, g) => sum + (g.minutes_done ?? 0), 0);
 
   return (
     <>
@@ -139,8 +139,8 @@ function ProgressPage() {
                     })}
                   </span>
                   <span>
-                    {goal.questions_done} questions · {goal.minutes_studied} min
-                    {goal.completed ? " ✅" : ""}
+                    {goal.questions_done} questions · {goal.minutes_done} min
+                    {goal.questions_done >= goal.question_goal ? " ✅" : ""}
                   </span>
                 </li>
               ))}
