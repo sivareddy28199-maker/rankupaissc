@@ -36,7 +36,7 @@ function AdminPage() {
       );
       const { data: generations } = await supabase
         .from("ai_generations")
-        .select("feature, provider, success, created_at")
+        .select("capability, provider, success, created_at")
         .order("created_at", { ascending: false })
         .limit(25);
       return { counts, generations: generations ?? [] };
@@ -77,7 +77,7 @@ function AdminPage() {
               <ul className="space-y-2 text-sm">
                 {stats.data.generations.map((row, i) => (
                   <li key={i} className="flex items-center justify-between gap-3">
-                    <span>{row.feature}</span>
+                    <span>{row.capability}</span>
                     <span className="text-muted-foreground">
                       {row.provider} · {row.success ? "ok" : "failed"} ·{" "}
                       {new Date(row.created_at).toLocaleString()}
