@@ -33,7 +33,7 @@ function ProfilePage() {
   const { data: profile, isLoading } = useProfile();
 
   const [fullName, setFullName] = useState("");
-  const [examId, setExamId] = useState<string | null>(null);
+  const [examCode, setExamCode] = useState("SSC_CGL");
   const [level, setLevel] = useState<string>("beginner");
   const [dailyGoal, setDailyGoal] = useState(20);
   const [saving, setSaving] = useState(false);
@@ -41,7 +41,7 @@ function ProfilePage() {
   const exams = useQuery({
     queryKey: ["exams"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("exams").select("id, name").eq("is_active", true);
+      const { data, error } = await supabase.from("exams").select("code, name").eq("is_active", true);
       if (error) throw error;
       return data;
     },
@@ -50,9 +50,9 @@ function ProfilePage() {
   useEffect(() => {
     if (!profile) return;
     setFullName(profile.full_name ?? "");
-    setExamId((profile as any).target_exam_id ?? null);
+    setExamCode((profile as any).target_exam_code ?? "SSC_CGL");
     setLevel((profile as any).study_level ?? "beginner");
-    setDailyGoal((profile as any).daily_goal_questions ?? 20);
+    setDailyGoal((profile as any).daily_question_goal ?? 20);
   }, [profile]);
 
   if (isLoading) return <LoadingState />;
@@ -63,9 +63,9 @@ function ProfilePage() {
       .from("profiles")
       .update({
         full_name: fullName,
-        target_exam_id: examId,
+        target_exam_code: examCode,
         study_level: level,
-        daily_goal_questions: dailyGoal,
+        daily_question_goal: dailyGoal,
       })
       .eq("id", profile!.id);
     setSaving(false);
@@ -103,12 +103,11 @@ function ProfilePage() {
           <select
             id="exam"
             className="h-10 rounded-md border border-input bg-background px-3 text-sm"
-            value={examId ?? ""}
-            onChange={(e) => setExamId(e.target.value || null)}
+            value={examCode}
+            onChange={(e) => setExamCode(e.target.value)}
           >
-            <option value="">Not selected</option>
             {exams.data?.map((exam) => (
-              <option key={exam.id} value={exam.id}>
+              <option key={exam.code} value={exam.code}>
                 {exam.name}
               </option>
             ))}
