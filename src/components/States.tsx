@@ -24,7 +24,7 @@ export function EmptyState({
 }) {
   return (
     <div className="surface flex flex-col items-center gap-3 px-6 py-12 text-center">
-      <span className="grid size-11 place-items-center rounded-full bg-muted text-muted-foreground">
+      <span className="grid size-11 place-items-center rounded-2xl border-2 border-border bg-sky text-sky-foreground shadow-[2px_2px_0_0_var(--ink)]">
         {icon ?? <Inbox className="size-5" aria-hidden />}
       </span>
       <div>
@@ -47,7 +47,7 @@ export function ErrorState({
 }) {
   return (
     <div className="surface flex flex-col items-center gap-3 px-6 py-10 text-center">
-      <span className="grid size-11 place-items-center rounded-full bg-destructive/10 text-destructive">
+      <span className="grid size-11 place-items-center rounded-2xl border-2 border-border bg-coral text-coral-foreground shadow-[2px_2px_0_0_var(--ink)]">
         <AlertCircle className="size-5" aria-hidden />
       </span>
       <p className="text-sm text-muted-foreground">{message}</p>

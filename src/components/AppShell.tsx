@@ -53,20 +53,20 @@ export function AppShell({ children }: { children: ReactNode }) {
     <div className="min-h-screen bg-background">
       <a
         href="#main"
-        className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:rounded-md focus:bg-primary focus:px-3 focus:py-2 focus:text-primary-foreground"
+        className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:rounded-xl focus:border-2 focus:border-border focus:bg-primary focus:px-3 focus:py-2 focus:text-primary-foreground"
       >
         Skip to content
       </a>
 
       {/* Desktop sidebar */}
-      <aside className="fixed inset-y-0 left-0 z-30 hidden w-60 flex-col border-r border-border bg-sidebar px-3 py-5 lg:flex">
-        <Link to="/dashboard" className="mb-6 flex items-center gap-2 px-2">
-          <span className="grid size-9 place-items-center rounded-xl bg-primary text-primary-foreground">
+      <aside className="fixed inset-y-3 left-3 z-30 hidden w-60 flex-col rounded-3xl border-2 border-border bg-sidebar px-3 py-5 shadow-[6px_6px_0_0_var(--ink)] lg:flex">
+        <Link to="/dashboard" className="mb-6 flex items-center gap-2 px-2 press">
+          <span className="grid size-10 shrink-0 place-items-center rounded-2xl border-2 border-border bg-primary text-primary-foreground shadow-[3px_3px_0_0_var(--ink)]">
             <GraduationCap className="size-5" aria-hidden />
           </span>
-          <span className="font-display text-lg font-semibold">RankUp AI</span>
+          <span className="font-display text-xl font-extrabold">RankUp AI</span>
         </Link>
-        <nav className="flex flex-1 flex-col gap-1" aria-label="Main">
+        <nav className="flex flex-1 flex-col gap-1.5" aria-label="Main">
           {NAV.map((item) => {
             const active = pathname.startsWith(item.to);
             return (
@@ -74,10 +74,10 @@ export function AppShell({ children }: { children: ReactNode }) {
                 key={item.to}
                 to={item.to}
                 className={cn(
-                  "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
+                  "press flex items-center gap-3 rounded-xl border-2 px-3 py-2.5 text-sm font-bold transition-all duration-200",
                   active
-                    ? "bg-primary/10 text-primary"
-                    : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                    ? "border-border bg-primary text-primary-foreground shadow-[3px_3px_0_0_var(--ink)]"
+                    : "border-transparent text-muted-foreground hover:border-border hover:bg-muted hover:text-foreground",
                 )}
                 aria-current={active ? "page" : undefined}
               >
@@ -90,10 +90,10 @@ export function AppShell({ children }: { children: ReactNode }) {
             <Link
               to="/admin"
               className={cn(
-                "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
+                "press flex items-center gap-3 rounded-xl border-2 px-3 py-2.5 text-sm font-bold transition-all duration-200",
                 pathname.startsWith("/admin")
-                  ? "bg-primary/10 text-primary"
-                  : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                  ? "border-border bg-coral text-coral-foreground shadow-[3px_3px_0_0_var(--ink)]"
+                  : "border-transparent text-muted-foreground hover:border-border hover:bg-muted hover:text-foreground",
               )}
             >
               <Shield className="size-4.5" aria-hidden />
@@ -101,44 +101,53 @@ export function AppShell({ children }: { children: ReactNode }) {
             </Link>
           ) : null}
         </nav>
-        <Button variant="ghost" className="justify-start gap-3" onClick={signOut}>
+        <Button variant="outline" className="justify-start gap-3" onClick={signOut}>
           <LogOut className="size-4.5" aria-hidden />
           Sign out
         </Button>
       </aside>
 
       {/* Mobile top bar */}
-      <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b border-border bg-background/90 px-4 backdrop-blur lg:hidden">
-        <Link to="/dashboard" className="flex items-center gap-2">
-          <span className="grid size-8 place-items-center rounded-lg bg-primary text-primary-foreground">
+      <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b-2 border-border bg-background/90 px-4 backdrop-blur lg:hidden">
+        <Link to="/dashboard" className="press flex min-w-0 items-center gap-2">
+          <span className="grid size-9 shrink-0 place-items-center rounded-xl border-2 border-border bg-primary text-primary-foreground shadow-[2px_2px_0_0_var(--ink)]">
             <GraduationCap className="size-4" aria-hidden />
           </span>
-          <span className="font-display text-base font-semibold">RankUp AI</span>
+          <span className="truncate font-display text-lg font-extrabold">RankUp AI</span>
         </Link>
-        <div className="flex items-center gap-1">
+        <div className="flex shrink-0 items-center gap-2">
           {isAdmin ? (
-            <Link to="/admin" aria-label="Admin" className="rounded-lg p-2 text-muted-foreground">
-              <Shield className="size-5" aria-hidden />
+            <Link
+              to="/admin"
+              aria-label="Admin"
+              className="press grid size-10 place-items-center rounded-xl border-2 border-border bg-coral text-coral-foreground shadow-[2px_2px_0_0_var(--ink)]"
+            >
+              <Shield className="size-4.5" aria-hidden />
             </Link>
           ) : null}
           <Link
             to="/profile"
             aria-label="Profile"
-            className="grid size-8 place-items-center rounded-full bg-secondary text-sm font-semibold text-secondary-foreground"
+            className="press grid size-10 place-items-center rounded-xl border-2 border-border bg-sky text-sm font-extrabold text-sky-foreground shadow-[2px_2px_0_0_var(--ink)]"
           >
             {initials}
           </Link>
         </div>
       </header>
 
-      <main id="main" className="mx-auto w-full max-w-5xl px-4 pb-24 pt-4 lg:pl-64 lg:pb-10">
+      <main
+        id="main"
+        key={pathname}
+        className="reveal mx-auto w-full max-w-5xl px-4 pb-28 pt-4 lg:pb-10 lg:pl-68"
+      >
         {children}
       </main>
 
       {/* Mobile bottom nav */}
       <nav
         aria-label="Primary"
-        className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-5 border-t border-border bg-background/95 pb-[env(safe-area-inset-bottom)] backdrop-blur lg:hidden"
+        className="fixed inset-x-3 bottom-3 z-30 grid grid-cols-5 gap-1 rounded-3xl border-2 border-border bg-card p-1.5 shadow-[4px_4px_0_0_var(--ink)] lg:hidden"
+        style={{ marginBottom: "env(safe-area-inset-bottom)" }}
       >
         {MOBILE_NAV.map((item) => {
           const active = pathname.startsWith(item.to);
@@ -148,12 +157,14 @@ export function AppShell({ children }: { children: ReactNode }) {
               to={item.to}
               aria-current={active ? "page" : undefined}
               className={cn(
-                "flex flex-col items-center gap-1 py-2.5 text-[11px] font-medium transition-colors",
-                active ? "text-primary" : "text-muted-foreground",
+                "press flex min-h-13 flex-col items-center justify-center gap-1 rounded-2xl px-1 py-1.5 text-[10px] font-bold transition-colors duration-200",
+                active
+                  ? "border-2 border-border bg-primary text-primary-foreground"
+                  : "text-muted-foreground",
               )}
             >
               <item.icon className="size-5" aria-hidden />
-              {item.label}
+              <span className="truncate">{item.label}</span>
             </Link>
           );
         })}
@@ -172,9 +183,9 @@ export function PageHeader({
   action?: ReactNode;
 }) {
   return (
-    <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
-      <div>
-        <h1 className="font-display text-2xl font-semibold">{title}</h1>
+    <div className="mb-5 grid grid-cols-[minmax(0,1fr)_auto] items-end gap-3 sm:flex sm:flex-wrap sm:justify-between">
+      <div className="min-w-0">
+        <h1 className="font-display text-2xl font-extrabold sm:text-3xl">{title}</h1>
         {description ? <p className="mt-1 text-sm text-muted-foreground">{description}</p> : null}
       </div>
       {action}

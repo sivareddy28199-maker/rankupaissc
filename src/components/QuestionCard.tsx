@@ -83,7 +83,7 @@ export function QuestionCard({
         ) : null}
       </div>
 
-      <p className="text-[15px] font-medium leading-relaxed">{question.question_text}</p>
+      <p className="text-[15px] font-semibold leading-relaxed">{question.question_text}</p>
 
       <ul className="mt-4 flex flex-col gap-2" role="radiogroup" aria-label="Answer options">
         {options.map((option) => {
@@ -99,20 +99,20 @@ export function QuestionCard({
                 disabled={disabled}
                 onClick={() => onSelect(option)}
                 className={cn(
-                  "flex w-full items-center justify-between gap-3 rounded-xl border px-3.5 py-3 text-left text-sm transition-colors",
+                  "press flex min-h-13 w-full items-center justify-between gap-3 rounded-2xl border-2 px-4 py-3 text-left text-sm font-semibold transition-all duration-200",
                   "disabled:cursor-not-allowed",
                   isCorrect
-                    ? "border-success bg-success/10 text-foreground"
+                    ? "border-border bg-success text-success-foreground shadow-[2px_2px_0_0_var(--ink)]"
                     : isWrong
-                      ? "border-destructive bg-destructive/10 text-foreground"
+                      ? "border-border bg-destructive text-destructive-foreground shadow-[2px_2px_0_0_var(--ink)]"
                       : isSelected
-                        ? "border-primary bg-primary/5"
-                        : "border-border bg-card hover:border-primary/40 hover:bg-muted/60",
+                        ? "border-border bg-primary text-primary-foreground shadow-[2px_2px_0_0_var(--ink)]"
+                        : "border-border bg-card hover:-translate-x-[1px] hover:-translate-y-[1px] hover:shadow-[3px_3px_0_0_var(--ink)]",
                 )}
               >
                 <span>{option}</span>
-                {isCorrect ? <Check className="size-4 shrink-0 text-success" aria-hidden /> : null}
-                {isWrong ? <X className="size-4 shrink-0 text-destructive" aria-hidden /> : null}
+                {isCorrect ? <Check className="size-4 shrink-0 shrink-0" aria-hidden /> : null}
+                {isWrong ? <X className="size-4 shrink-0 shrink-0" aria-hidden /> : null}
               </button>
             </li>
           );
@@ -120,7 +120,7 @@ export function QuestionCard({
       </ul>
 
       {revealed && question.explanation ? (
-        <div className="mt-4 rounded-xl bg-muted/70 p-3.5">
+        <div className="clay-sm mt-4 bg-warning/40 p-3.5">
           <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
             Explanation
           </p>
