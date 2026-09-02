@@ -7,8 +7,8 @@ export interface QuestionShape {
   id: string;
   question_text: string;
   options: unknown;
-  correct_answer: string;
-  explanation: string | null;
+  correct_answer?: string | null;
+  explanation?: string | null;
   difficulty: string;
   topics?: { name: string } | null;
   subjects?: { name: string } | null;

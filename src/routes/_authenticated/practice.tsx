@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
@@ -17,7 +18,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { DIFFICULTIES, PRACTICE_SIZES } from "@/lib/config";
-import { recordActivity, scheduleRevision } from "@/lib/study";
+import { recordActivity } from "@/lib/study";
+import { answerPracticeQuestion } from "@/lib/questions.functions";
 
 export const Route = createFileRoute("/_authenticated/practice")({
   head: () => ({
@@ -90,7 +92,7 @@ function PracticePage() {
 
       let query = supabase
         .from("questions")
-        .select("id, question_text, options, correct_answer, explanation, difficulty, topics(name), subjects(name)")
+        .select("id, question_text, options, difficulty, topics(name), subjects(name)")
         .eq("is_published", true)
         .eq("subject_id", subjectId)
         .limit(count * 3);
@@ -229,44 +231,48 @@ function PracticeRunner({ session, onExit }: { session: Session; onExit: () => v
   const [index, setIndex] = useState(0);
   const [selected, setSelected] = useState<string | null>(null);
   const [revealed, setRevealed] = useState(false);
+  const [key, setKey] = useState<{ correctAnswer: string; explanation: string | null } | null>(null);
   const [correct, setCorrect] = useState(0);
   const [wrong, setWrong] = useState(0);
   const [bookmarked, setBookmarked] = useState<Record<string, boolean>>({});
   const [finished, setFinished] = useState(false);
   const startedAt = useRef(Date.now());
   const questionStart = useRef(Date.now());
+  const gradeAnswer = useServerFn(answerPracticeQuestion);
 
-  const question = session.questions[index]!;
+  const baseQuestion = session.questions[index]!;
+  const question: QuestionShape = key
+    ? { ...baseQuestion, correct_answer: key.correctAnswer, explanation: key.explanation }
+    : baseQuestion;
   const total = session.questions.length;
 
   async function submitAnswer() {
     if (!selected || revealed) return;
-    const { data: auth } = await supabase.auth.getUser();
-    const userId = auth.user?.id;
-    if (!userId) return;
-
-    const isCorrect = selected === question.correct_answer;
-    setRevealed(true);
-    if (isCorrect) setCorrect((c) => c + 1);
-    else setWrong((w) => w + 1);
-
-    await supabase.from("practice_answers").insert({
-      session_id: session.id,
-      user_id: userId,
-      question_id: question.id,
-      selected_answer: selected,
-      correct_answer: question.correct_answer,
-      is_correct: isCorrect,
-      time_taken_seconds: Math.round((Date.now() - questionStart.current) / 1000),
-    });
-    if (!isCorrect) await scheduleRevision(userId, question.id, false);
+    try {
+      const result = (await gradeAnswer({
+        data: {
+          sessionId: session.id,
+          questionId: baseQuestion.id,
+          selectedAnswer: selected,
+          timeTakenSeconds: Math.round((Date.now() - questionStart.current) / 1000),
+        },
+      })) as { isCorrect: boolean; correctAnswer: string; explanation: string | null };
+      setKey({ correctAnswer: result.correctAnswer, explanation: result.explanation });
+      setRevealed(true);
+      if (result.isCorrect) setCorrect((c) => c + 1);
+      else setWrong((w) => w + 1);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not check that answer.");
+    }
   }
+
 
   async function next() {
     if (index + 1 >= total) return finish();
     setIndex((i) => i + 1);
     setSelected(null);
     setRevealed(false);
+    setKey(null);
     questionStart.current = Date.now();
   }
 
