@@ -1,5 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Flag, Timer } from "lucide-react";
 import { toast } from "sonner";
@@ -11,7 +12,8 @@ import { QuestionCard, type QuestionShape } from "@/components/QuestionCard";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { DEFAULT_SCORING } from "@/lib/config";
-import { formatClock, recordActivity, scheduleRevision } from "@/lib/study";
+import { formatClock, recordActivity } from "@/lib/study";
+import { submitTestAttempt } from "@/lib/questions.functions";
 
 export const Route = createFileRoute("/_authenticated/tests/$testId")({
   head: () => ({
@@ -58,7 +60,7 @@ function TestRunner() {
 
       const { data: rows, error: qError } = await supabase
         .from("test_questions")
-        .select("position, questions(id, question_text, options, correct_answer, explanation, difficulty, topics(name), subjects(name))")
+        .select("position, questions(id, question_text, options, difficulty, topics(name), subjects(name))")
         .eq("test_id", testId)
         .order("position");
       if (qError) throw qError;
@@ -153,68 +155,32 @@ function TestRunner() {
     });
   }
 
+  const gradeAttempt = useServerFn(submitTestAttempt);
+
   const submit = useCallback(
     async (auto = false) => {
       if (!setup.data || submitting) return;
       setSubmitting(true);
-      const rules = (setup.data.test as any).exams ?? {};
-      const correctMark = Number(rules.marks_correct ?? DEFAULT_SCORING.correct);
-      const wrongMark = Number(rules.marks_wrong ?? DEFAULT_SCORING.wrong);
+      try {
+        const result = (await gradeAttempt({
+          data: { attemptId: setup.data.attemptId, timeSpentSeconds: elapsed },
+        })) as { attempted: number };
 
-      let score = 0;
-      let correct = 0;
-      let wrong = 0;
-      let skipped = 0;
+        await recordActivity({
+          userId: setup.data.userId,
+          activity: "mock_test",
+          minutes: Math.max(1, Math.round(elapsed / 60)),
+          questions: result.attempted,
+        });
 
-      for (const question of questions) {
-        const state = answers[question.id];
-        if (!state?.selected) {
-          skipped += 1;
-          continue;
-        }
-        const isCorrect = state.selected === question.correct_answer;
-        if (isCorrect) {
-          correct += 1;
-          score += correctMark;
-        } else {
-          wrong += 1;
-          score += wrongMark;
-          await scheduleRevision(setup.data.userId, question.id, false);
-        }
-        await supabase
-          .from("test_answers")
-          .update({ is_correct: isCorrect })
-          .eq("attempt_id", setup.data.attemptId)
-          .eq("question_id", question.id);
+        if (auto) toast.info("Time is up — your test was submitted automatically.");
+        navigate({ to: "/results/$attemptId", params: { attemptId: setup.data.attemptId } });
+      } catch (error) {
+        setSubmitting(false);
+        toast.error(error instanceof Error ? error.message : "Could not submit the test.");
       }
-
-      const attempted = correct + wrong;
-      await supabase
-        .from("test_attempts")
-        .update({
-          status: "submitted",
-          score: Math.round(score * 100) / 100,
-          max_marks: questions.length * correctMark,
-          correct_count: correct,
-          wrong_count: wrong,
-          skipped_count: skipped,
-          accuracy: attempted ? Math.round((correct / attempted) * 1000) / 10 : 0,
-          time_spent_seconds: elapsed,
-          submitted_at: new Date().toISOString(),
-        })
-        .eq("id", setup.data.attemptId);
-
-      await recordActivity({
-        userId: setup.data.userId,
-        activity: "mock_test",
-        minutes: Math.max(1, Math.round(elapsed / 60)),
-        questions: attempted,
-      });
-
-      if (auto) toast.info("Time is up — your test was submitted automatically.");
-      navigate({ to: "/results/$attemptId", params: { attemptId: setup.data.attemptId } });
     },
-    [answers, elapsed, navigate, questions, setup.data, submitting],
+    [elapsed, gradeAttempt, navigate, setup.data, submitting],
   );
 
   useEffect(() => {

@@ -7,6 +7,7 @@ import { toast } from "sonner";
 
 import { supabase } from "@/integrations/supabase/client";
 import { analyzePerformance } from "@/lib/ai.functions";
+import { getAttemptAnswerKeys, type AnswerKey } from "@/lib/questions.functions";
 import { PageHeader } from "@/components/AppShell";
 import { ErrorState, LoadingState } from "@/components/States";
 import { Markdown } from "@/components/Markdown";
@@ -41,7 +42,7 @@ function ResultPage() {
       const { data, error } = await supabase
         .from("test_attempts")
         .select(
-          "*, tests(id, title), test_answers(selected_answer, is_correct, time_taken_seconds, questions(id, question_text, options, correct_answer, explanation, difficulty, topics(name), subjects(name)))",
+          "*, tests(id, title), test_answers(selected_answer, is_correct, time_taken_seconds, questions(id, question_text, options, difficulty, topics(name), subjects(name)))",
         )
         .eq("id", attemptId)
         .maybeSingle();
@@ -49,6 +50,12 @@ function ResultPage() {
       if (!data) throw new Error("Attempt not found");
       return data;
     },
+  });
+
+  const loadKeys = useServerFn(getAttemptAnswerKeys);
+  const answerKeys = useQuery({
+    queryKey: ["attempt-keys", attemptId],
+    queryFn: async () => (await loadKeys({ data: { attemptId } })) as AnswerKey[],
   });
 
   const analyse = useMutation({
