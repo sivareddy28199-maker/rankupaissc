@@ -89,6 +89,10 @@ function ResultPage() {
       map.set(key, acc);
     }
   }
+  const keyById = new Map(
+    ((answerKeys.data ?? []) as AnswerKey[]).map((k) => [k.question_id, k]),
+  );
+
   const weakTopics = [...byTopic.entries()]
     .map(([name, v]) => ({ name, acc: Math.round((v.c / v.t) * 100), t: v.t }))
     .sort((a, b) => a.acc - b.acc)
@@ -179,7 +183,13 @@ function ResultPage() {
           {answers.map((answer, i) => (
             <QuestionCard
               key={answer.questions?.id ?? i}
-              question={answer.questions as QuestionShape}
+              question={
+                {
+                  ...(answer.questions as QuestionShape),
+                  correct_answer: keyById.get(answer.questions?.id)?.correct_answer ?? null,
+                  explanation: keyById.get(answer.questions?.id)?.explanation ?? null,
+                } as QuestionShape
+              }
               index={i}
               total={answers.length}
               selected={answer.selected_answer}
