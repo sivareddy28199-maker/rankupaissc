@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
@@ -17,7 +18,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { DIFFICULTIES, PRACTICE_SIZES } from "@/lib/config";
-import { recordActivity, scheduleRevision } from "@/lib/study";
+import { recordActivity } from "@/lib/study";
+import { answerPracticeQuestion } from "@/lib/questions.functions";
 
 export const Route = createFileRoute("/_authenticated/practice")({
   head: () => ({
@@ -270,6 +272,7 @@ function PracticeRunner({ session, onExit }: { session: Session; onExit: () => v
     setIndex((i) => i + 1);
     setSelected(null);
     setRevealed(false);
+    setKey(null);
     questionStart.current = Date.now();
   }
 
