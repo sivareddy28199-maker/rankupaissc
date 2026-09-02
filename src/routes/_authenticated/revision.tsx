@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
+import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 
 import { supabase } from "@/integrations/supabase/client";
@@ -9,7 +10,7 @@ import { EmptyState, ErrorState, LoadingState } from "@/components/States";
 import { QuestionCard, type QuestionShape } from "@/components/QuestionCard";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { scheduleRevision } from "@/lib/study";
+import { answerRevisionQuestion, getAttemptedAnswerKeys, type AnswerKey } from "@/lib/questions.functions";
 
 export const Route = createFileRoute("/_authenticated/revision")({
   head: () => ({
@@ -29,7 +30,7 @@ export const Route = createFileRoute("/_authenticated/revision")({
 });
 
 const QUESTION_SELECT =
-  "id, question_text, options, correct_answer, explanation, difficulty, topics(name), subjects(name)";
+  "id, question_text, options, difficulty, topics(name), subjects(name)";
 
 function RevisionPage() {
   const queryClient = useQueryClient();
@@ -61,6 +62,21 @@ function RevisionPage() {
     },
   });
 
+  const loadKeys = useServerFn(getAttemptedAnswerKeys);
+  const bookmarkKeys = useQuery({
+    queryKey: ["bookmark-keys", (bookmarks.data ?? []).map((b: any) => b.questions?.id).join(",")],
+    enabled: Boolean(bookmarks.data?.length),
+    queryFn: async () =>
+      (await loadKeys({
+        data: {
+          questionIds: (bookmarks.data ?? [])
+            .map((b: any) => b.questions?.id as string | undefined)
+            .filter((id): id is string => Boolean(id)),
+        },
+      })) as AnswerKey[],
+  });
+  const keyById = new Map(((bookmarkKeys.data ?? []) as AnswerKey[]).map((k) => [k.question_id, k]));
+
   return (
     <>
       <PageHeader title="Revision" description="Recall what you got wrong, right on time." />
@@ -89,8 +105,7 @@ function RevisionPage() {
                   index={i}
                   total={due.data.length}
                   question={(item as any).questions as QuestionShape}
-                  onGrade={async (correct) => {
-                    await scheduleRevision((item as any).user_id, (item as any).question_id, correct);
+                  onAnswered={() => {
                     void queryClient.invalidateQueries({ queryKey: ["revision-due"] });
                   }}
                 />
@@ -109,7 +124,14 @@ function RevisionPage() {
               {bookmarks.data.map((item, i) => (
                 <div key={item.id}>
                   <QuestionCard
-                    question={(item as any).questions as QuestionShape}
+                    question={
+                      {
+                        ...((item as any).questions as QuestionShape),
+                        correct_answer:
+                          keyById.get((item as any).questions?.id)?.correct_answer ?? null,
+                        explanation: keyById.get((item as any).questions?.id)?.explanation ?? null,
+                      } as QuestionShape
+                    }
                     index={i}
                     total={bookmarks.data.length}
                     selected={null}
@@ -143,20 +165,26 @@ function RevisionItem({
   question,
   index,
   total,
-  onGrade,
+  onAnswered,
 }: {
   question: QuestionShape;
   index: number;
   total: number;
-  onGrade: (correct: boolean) => Promise<void>;
+  onAnswered: () => void;
 }) {
   const [selected, setSelected] = useState<string | null>(null);
   const [done, setDone] = useState(false);
+  const [key, setKey] = useState<{ correctAnswer: string; explanation: string | null } | null>(null);
+  const grade = useServerFn(answerRevisionQuestion);
 
   return (
     <div>
       <QuestionCard
-        question={question}
+        question={
+          key
+            ? { ...question, correct_answer: key.correctAnswer, explanation: key.explanation }
+            : question
+        }
         index={index}
         total={total}
         selected={selected}
@@ -164,7 +192,17 @@ function RevisionItem({
           if (done) return;
           setSelected(value);
           setDone(true);
-          void onGrade(value === question.correct_answer);
+          void (async () => {
+            try {
+              const result = (await grade({
+                data: { questionId: question.id, selectedAnswer: value },
+              })) as { correctAnswer: string; explanation: string | null };
+              setKey({ correctAnswer: result.correctAnswer, explanation: result.explanation });
+              onAnswered();
+            } catch (error) {
+              toast.error(error instanceof Error ? error.message : "Could not grade that answer.");
+            }
+          })();
         }}
         revealed={done}
         disabled={done}
