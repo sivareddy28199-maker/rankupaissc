@@ -177,15 +177,22 @@ export function PageHeader({
   title,
   description,
   action,
+  eyebrow,
 }: {
   title: string;
   description?: string;
   action?: ReactNode;
+  eyebrow?: string;
 }) {
   return (
     <div className="mb-5 grid grid-cols-[minmax(0,1fr)_auto] items-end gap-3 sm:flex sm:flex-wrap sm:justify-between">
       <div className="min-w-0">
-        <h1 className="font-display text-2xl font-extrabold sm:text-3xl">{title}</h1>
+        {eyebrow ? (
+          <span className="mb-2 inline-flex items-center rounded-full border-2 border-border bg-coral px-3 py-0.5 text-[11px] font-extrabold uppercase tracking-wide text-coral-foreground">
+            {eyebrow}
+          </span>
+        ) : null}
+        <h1 className="font-display text-2xl font-extrabold leading-tight sm:text-3xl">{title}</h1>
         {description ? <p className="mt-1 text-sm text-muted-foreground">{description}</p> : null}
       </div>
       {action}
