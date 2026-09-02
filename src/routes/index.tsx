@@ -176,10 +176,10 @@ function Landing() {
               </div>
             </ClayCard>
 
-            <div className="pointer-events-none absolute -left-3 top-16 hidden animate-float-slow rounded-2xl border-2 border-border bg-coral px-3 py-2 text-xs font-extrabold text-coral-foreground shadow-[3px_3px_0_0_var(--ink)] sm:block">
+            <div className="pointer-events-none absolute -left-5 top-28 hidden animate-float-slow rounded-2xl border-2 border-border bg-coral px-3 py-2 text-xs font-extrabold text-coral-foreground shadow-[3px_3px_0_0_var(--ink)] sm:block">
               +12 XP
             </div>
-            <div className="pointer-events-none absolute -right-2 bottom-8 hidden animate-float-mid items-center gap-1.5 rounded-2xl border-2 border-border bg-card px-3 py-2 text-xs font-extrabold shadow-[3px_3px_0_0_var(--ink)] sm:flex">
+            <div className="pointer-events-none absolute -right-5 bottom-6 hidden animate-float-mid items-center gap-1.5 rounded-2xl border-2 border-border bg-card px-3 py-2 text-xs font-extrabold shadow-[3px_3px_0_0_var(--ink)] sm:flex">
               <Bot className="size-4" aria-hidden /> AI Coach
             </div>
           </div>
