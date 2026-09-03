@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { PageHeader } from "@/components/AppShell";
 import { EmptyState, LoadingState } from "@/components/States";
 import { useIsAdmin } from "@/hooks/useProfile";
+import { ClayCard, StatCard } from "@/components/kit";
 
 export const Route = createFileRoute("/_authenticated/admin")({
   head: () => ({
@@ -54,31 +55,36 @@ function AdminPage() {
 
   return (
     <>
-      <PageHeader title="Admin" description="Content library and AI usage at a glance." />
+      <PageHeader eyebrow="Admin" title="Content & usage" description="Content library and AI usage at a glance." />
 
       {stats.isLoading ? (
         <LoadingState />
       ) : (
         <>
           <section className="grid grid-cols-2 gap-3 sm:grid-cols-4" aria-label="Content counts">
-            {stats.data?.counts.map(([table, count]) => (
-              <div key={table} className="surface p-4">
-                <p className="text-xs capitalize text-muted-foreground">{table}</p>
-                <p className="mt-1 font-display text-2xl font-semibold">{count}</p>
-              </div>
+            {stats.data?.counts.map(([table, count], i) => (
+              <StatCard
+                key={table}
+                tone={(["primary", "sky", "coral", "warning"] as const)[i % 4]!}
+                label={table}
+                value={count}
+              />
             ))}
           </section>
 
-          <section className="surface mt-5 p-4" aria-labelledby="ai-usage">
-            <h2 id="ai-usage" className="mb-3 text-sm font-semibold">
+          <ClayCard className="reveal mt-5" aria-labelledby="ai-usage">
+            <h2 id="ai-usage" className="mb-3 font-display text-xl">
               Recent AI generations
             </h2>
             {stats.data?.generations.length ? (
               <ul className="space-y-2 text-sm">
                 {stats.data.generations.map((row, i) => (
-                  <li key={i} className="flex items-center justify-between gap-3">
-                    <span>{row.capability}</span>
-                    <span className="text-muted-foreground">
+                  <li
+                    key={i}
+                    className="clay-sm flex flex-wrap items-center justify-between gap-2 bg-muted px-3.5 py-2.5"
+                  >
+                    <span className="font-bold">{row.capability}</span>
+                    <span className="text-xs text-muted-foreground">
                       {row.provider} · {row.success ? "ok" : "failed"} ·{" "}
                       {new Date(row.created_at).toLocaleString()}
                     </span>
@@ -88,7 +94,7 @@ function AdminPage() {
             ) : (
               <p className="text-sm text-muted-foreground">No AI usage recorded yet.</p>
             )}
-          </section>
+          </ClayCard>
         </>
       )}
     </>

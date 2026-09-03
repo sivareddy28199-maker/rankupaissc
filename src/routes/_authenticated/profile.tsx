@@ -10,7 +10,7 @@ import { useProfile } from "@/hooks/useProfile";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
+import { ClayCard, Chip } from "@/components/kit";
 import { STUDY_LEVELS } from "@/lib/config";
 
 export const Route = createFileRoute("/_authenticated/profile")({
@@ -87,12 +87,17 @@ function ProfilePage() {
   return (
     <>
       <PageHeader
+        eyebrow="Account"
         title="Profile"
         description="Tune RankUp AI to your exam and pace."
-        action={<Badge variant="secondary" className="capitalize">{profile?.plan_tier ?? "free"} plan</Badge>}
+        action={
+          <Chip tone="warning" className="capitalize">
+            {profile?.plan_tier ?? "free"} plan
+          </Chip>
+        }
       />
 
-      <section className="surface grid gap-4 p-4" aria-label="Profile settings">
+      <ClayCard className="reveal grid gap-4" aria-label="Profile settings">
         <div className="grid gap-1.5">
           <Label htmlFor="full-name">Full name</Label>
           <Input id="full-name" value={fullName} onChange={(e) => setFullName(e.target.value)} />
@@ -102,7 +107,7 @@ function ProfilePage() {
           <Label htmlFor="exam">Target exam</Label>
           <select
             id="exam"
-            className="h-10 rounded-md border border-input bg-background px-3 text-sm"
+            className="h-11 rounded-xl border-2 border-border bg-card px-3 text-sm font-semibold shadow-[2px_2px_0_0_var(--ink)]"
             value={examCode}
             onChange={(e) => setExamCode(e.target.value)}
           >
@@ -147,11 +152,17 @@ function ProfilePage() {
         <Button onClick={save} disabled={saving}>
           {saving ? "Saving…" : "Save changes"}
         </Button>
-      </section>
+      </ClayCard>
 
-      <Button variant="outline" className="mt-4 w-full" onClick={signOut}>
-        Sign out
-      </Button>
+      <ClayCard tone="coral" className="reveal mt-4 flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <p className="font-display text-lg leading-tight">Sign out</p>
+          <p className="text-sm opacity-80">You can sign back in any time.</p>
+        </div>
+        <Button variant="secondary" onClick={signOut}>
+          Sign out
+        </Button>
+      </ClayCard>
     </>
   );
 }
