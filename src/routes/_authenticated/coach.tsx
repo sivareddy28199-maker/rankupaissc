@@ -14,14 +14,13 @@ import {
   getAiStatus,
   solveDoubt,
 } from "@/lib/ai.functions";
-import { PageHeader } from "@/components/AppShell";
+import { ClayCard } from "@/components/kit";
 import { Markdown } from "@/components/Markdown";
 import { EmptyState, LoadingState } from "@/components/States";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DIFFICULTIES } from "@/lib/config";
 import { cn } from "@/lib/utils";
@@ -48,17 +47,24 @@ function CoachPage() {
 
   return (
     <>
-      <PageHeader
-        title="AI coach"
-        description="Your always-on tutor, notes maker and planner."
-        action={
-          status.data ? (
-            <Badge variant="secondary">
+      <ClayCard tone="ink" className="reveal mb-5">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <span className="inline-flex items-center gap-2 rounded-full border-2 border-border bg-primary px-3 py-1 text-xs font-extrabold text-primary-foreground">
+            <span className="size-2 rounded-full bg-foreground" aria-hidden />
+            AI online
+          </span>
+          {status.data ? (
+            <span className="rounded-full border-2 border-border bg-warning px-3 py-1 text-xs font-extrabold text-warning-foreground">
               {status.data.used}/{status.data.limit} today
-            </Badge>
-          ) : null
-        }
-      />
+            </span>
+          ) : null}
+        </div>
+        <h1 className="mt-3 font-display text-3xl leading-tight">Your AI Coach</h1>
+        <p className="mt-1 text-sm opacity-80">
+          RankUp AI reads your real attempts — accuracy, pace, weak topics — and turns them into a
+          plan you can finish today.
+        </p>
+      </ClayCard>
 
       <Tabs defaultValue="tutor">
         <TabsList className="grid w-full grid-cols-4">
@@ -122,9 +128,9 @@ function TutorTab() {
           <div
             key={i}
             className={cn(
-              "max-w-[92%] rounded-2xl px-4 py-3 text-sm",
+              "reveal max-w-[92%] px-4 py-3 text-sm",
               message.role === "user"
-                ? "ml-auto bg-primary text-primary-foreground"
+                ? "clay-sm ml-auto bg-primary font-semibold text-primary-foreground"
                 : "surface mr-auto",
             )}
           >
@@ -212,7 +218,9 @@ function NotesTab() {
       <div className="mt-4 space-y-3">
         {notes.data?.map((note) => (
           <details key={note.id} className="surface p-4">
-            <summary className="cursor-pointer text-sm font-semibold">{note.title}</summary>
+            <summary className="cursor-pointer font-display text-base font-extrabold">
+              {note.title}
+            </summary>
             <div className="mt-3">
               <Markdown content={note.content} />
             </div>
