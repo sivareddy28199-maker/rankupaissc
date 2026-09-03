@@ -105,7 +105,7 @@ function TestsPage() {
           {tests.data.map((test, i) => (
             <ClayCard
               key={test.id}
-              tone={CARD_TONES[i % CARD_TONES.length]}
+              tone={CARD_TONES[i % CARD_TONES.length]!}
               interactive
               className="reveal flex flex-col"
             >
