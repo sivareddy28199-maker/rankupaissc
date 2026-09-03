@@ -9,6 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { analyzePerformance } from "@/lib/ai.functions";
 import { getAttemptAnswerKeys, type AnswerKey } from "@/lib/questions.functions";
 import { PageHeader } from "@/components/AppShell";
+import { ClayCard } from "@/components/kit";
 import { ErrorState, LoadingState } from "@/components/States";
 import { Markdown } from "@/components/Markdown";
 import { QuestionCard, type QuestionShape } from "@/components/QuestionCard";
@@ -101,24 +102,24 @@ function ResultPage() {
 
   return (
     <>
-      <PageHeader title="Test result" description={attempt.tests?.title} />
+      <PageHeader eyebrow="Result" title="Test result" description={attempt.tests?.title} />
 
-      <section className="surface p-5" aria-label="Score summary">
-        <p className="font-display text-4xl font-semibold">
+      <ClayCard tone="primary" className="reveal" aria-label="Score summary">
+        <p className="font-display text-5xl leading-none">
           {Number(attempt.score)}
-          <span className="text-lg text-muted-foreground"> / {Number(attempt.max_marks)}</span>
+          <span className="text-xl opacity-70"> / {Number(attempt.max_marks)}</span>
         </p>
-        <p className="mt-1 text-sm text-muted-foreground">{percentage}% of maximum marks</p>
+        <p className="mt-1.5 text-sm font-bold opacity-80">{percentage}% of maximum marks</p>
         <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
-          <Metric label="Correct" value={attempt.correct_count} tone="text-success" />
-          <Metric label="Wrong" value={attempt.wrong_count} tone="text-destructive" />
+          <Metric label="Correct" value={attempt.correct_count} />
+          <Metric label="Wrong" value={attempt.wrong_count} />
           <Metric label="Skipped" value={attempt.skipped_count} />
           <Metric label="Accuracy" value={`${Number(attempt.accuracy)}%`} />
         </div>
-        <p className="mt-3 text-sm text-muted-foreground">
+        <p className="mt-3 text-sm font-bold opacity-80">
           Time used: {formatClock(attempt.time_spent_seconds ?? 0)}
         </p>
-      </section>
+      </ClayCard>
 
       <div className="mt-4 flex flex-wrap gap-2">
         <Button onClick={() => analyse.mutate()} disabled={analyse.isPending}>
@@ -137,9 +138,12 @@ function ResultPage() {
       </div>
 
       {analysis ? (
-        <section className="surface mt-4 p-4">
+        <ClayCard tone="ink" className="reveal mt-4">
+          <p className="mb-2 inline-flex items-center gap-2 rounded-full border-2 border-border bg-primary px-3 py-1 text-xs font-extrabold text-primary-foreground">
+            AI analysis
+          </p>
           <Markdown content={analysis} />
-        </section>
+        </ClayCard>
       ) : null}
 
       <Tabs defaultValue="breakdown" className="mt-6">
@@ -149,34 +153,40 @@ function ResultPage() {
         </TabsList>
 
         <TabsContent value="breakdown" className="mt-4 space-y-4">
-          <section className="surface p-4">
-            <h2 className="mb-3 text-sm font-semibold">Subject-wise performance</h2>
+          <ClayCard tone="sky" className="reveal">
+            <h2 className="mb-3 font-display text-xl">Subject-wise performance</h2>
             <ul className="space-y-2">
               {[...bySubject.entries()].map(([name, v]) => (
-                <li key={name} className="flex items-center justify-between text-sm">
-                  <span>{name}</span>
-                  <span className="font-medium">
+                <li
+                  key={name}
+                  className="clay-sm flex items-center justify-between gap-2 bg-card px-3.5 py-2.5 text-sm text-foreground"
+                >
+                  <span className="font-bold">{name}</span>
+                  <span className="font-extrabold">
                     {v.c}/{v.t} · {Math.round((v.c / v.t) * 100)}%
                   </span>
                 </li>
               ))}
             </ul>
-          </section>
-          <section className="surface p-4">
-            <h2 className="mb-3 text-sm font-semibold">Topic weaknesses</h2>
+          </ClayCard>
+          <ClayCard tone="coral" className="reveal">
+            <h2 className="mb-3 font-display text-xl">Topic weaknesses</h2>
             {weakTopics.length ? (
               <ul className="space-y-2">
                 {weakTopics.map((topic) => (
-                  <li key={topic.name} className="flex items-center justify-between text-sm">
-                    <span>{topic.name}</span>
-                    <span className="font-medium text-destructive">{topic.acc}%</span>
+                  <li
+                    key={topic.name}
+                    className="clay-sm flex items-center justify-between gap-2 bg-card px-3.5 py-2.5 text-sm text-foreground"
+                  >
+                    <span className="font-bold">{topic.name}</span>
+                    <span className="font-extrabold">{topic.acc}%</span>
                   </li>
                 ))}
               </ul>
             ) : (
-              <p className="text-sm text-muted-foreground">No weak topics in this paper. Strong work.</p>
+              <p className="text-sm font-semibold">No weak topics in this paper. Strong work.</p>
             )}
-          </section>
+          </ClayCard>
         </TabsContent>
 
         <TabsContent value="review" className="mt-4 space-y-4">
@@ -204,11 +214,11 @@ function ResultPage() {
   );
 }
 
-function Metric({ label, value, tone }: { label: string; value: number | string; tone?: string }) {
+function Metric({ label, value }: { label: string; value: number | string }) {
   return (
-    <div className="rounded-xl bg-muted/60 p-3">
-      <p className="text-xs text-muted-foreground">{label}</p>
-      <p className={`mt-0.5 font-display text-xl font-semibold ${tone ?? ""}`}>{value}</p>
+    <div className="clay-sm bg-card p-3 text-foreground">
+      <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">{label}</p>
+      <p className="mt-0.5 font-display text-xl leading-none">{value}</p>
     </div>
   );
 }

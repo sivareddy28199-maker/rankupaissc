@@ -207,8 +207,10 @@ function TestRunner() {
         action={
           <span
             className={cn(
-              "flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-semibold tabular-nums",
-              remaining < 120 ? "bg-destructive/10 text-destructive" : "bg-muted",
+              "flex items-center gap-1.5 rounded-full border-2 border-border px-3.5 py-1.5 font-display text-base tabular-nums shadow-[2px_2px_0_0_var(--ink)]",
+              remaining < 120
+                ? "animate-pulse bg-coral text-coral-foreground"
+                : "bg-warning text-warning-foreground",
             )}
             role="timer"
             aria-live="off"
@@ -260,8 +262,8 @@ function TestRunner() {
         </Button>
       </div>
 
-      <section className="surface mt-5 p-4" aria-labelledby="palette">
-        <h2 id="palette" className="mb-3 text-sm font-semibold">
+      <section className="surface reveal mt-5 p-4" aria-labelledby="palette">
+        <h2 id="palette" className="mb-3 font-display text-lg">
           Question palette
         </h2>
         <div className="grid grid-cols-8 gap-2 sm:grid-cols-10">
@@ -278,13 +280,13 @@ function TestRunner() {
                   questionStart.current = Date.now();
                 }}
                 className={cn(
-                  "grid aspect-square place-items-center rounded-lg border text-sm font-medium transition-colors",
-                  i === index && "ring-2 ring-ring ring-offset-1",
+                  "press grid aspect-square min-h-9 place-items-center rounded-xl border-2 border-border text-sm font-extrabold transition-all duration-200",
+                  i === index && "shadow-[2px_2px_0_0_var(--ink)] ring-2 ring-ring ring-offset-2",
                   state?.marked
-                    ? "border-warning bg-warning/20"
+                    ? "bg-warning text-warning-foreground"
                     : state?.selected
-                      ? "border-success bg-success/15"
-                      : "border-border bg-muted/40 text-muted-foreground",
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-muted text-muted-foreground",
                 )}
               >
                 {i + 1}
