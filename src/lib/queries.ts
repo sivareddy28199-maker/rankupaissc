@@ -179,8 +179,8 @@ export const subjectsQuery = queryOptions({
   queryFn: async () => {
     const { data, error } = await supabase
       .from("subjects")
-      .select("id, name, slug")
-      .order("display_order");
+      .select("id, name, exam_id")
+      .order("sort_order");
     if (error) throw error;
     return data;
   },
