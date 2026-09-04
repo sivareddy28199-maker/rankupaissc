@@ -6,6 +6,7 @@ import { toast } from "sonner";
 
 import { supabase } from "@/integrations/supabase/client";
 import { PageHeader } from "@/components/AppShell";
+import { StatCard } from "@/components/kit";
 import { EmptyState, ErrorState, LoadingState } from "@/components/States";
 import { QuestionCard, type QuestionShape } from "@/components/QuestionCard";
 import { Button } from "@/components/ui/button";
@@ -79,7 +80,16 @@ function RevisionPage() {
 
   return (
     <>
-      <PageHeader title="Revision" description="Recall what you got wrong, right on time." />
+      <PageHeader
+        eyebrow="Smart revision"
+        title="Never forget what you learn."
+        description="Spaced repetition and bookmarks keep old topics alive."
+      />
+
+      <section className="mb-5 grid grid-cols-2 gap-3" aria-label="Revision summary">
+        <StatCard tone="primary" label="Due for revision" value={`${due.data?.length ?? 0} items`} />
+        <StatCard tone="sky" label="Bookmarked" value={`${bookmarks.data?.length ?? 0} questions`} />
+      </section>
 
       <Tabs defaultValue="due">
         <TabsList className="grid w-full grid-cols-2">

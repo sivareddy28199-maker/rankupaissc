@@ -145,8 +145,12 @@ function PracticePage() {
 
   return (
     <>
-      <PageHeader title="Practice" description="Pick a focus area and start solving." />
-      <div className="surface flex flex-col gap-4 p-4 sm:p-5">
+      <PageHeader
+        eyebrow="Practice"
+        title="Solve with purpose."
+        description="Pick a focus area and start solving."
+      />
+      <div className="surface reveal flex flex-col gap-4 p-4 sm:p-5">
         <Field label="Subject">
           <Select value={subjectId} onValueChange={(v) => { setSubjectId(v); setTopicId("all"); }}>
             <SelectTrigger aria-label="Subject">
@@ -322,25 +326,29 @@ function PracticeRunner({ session, onExit }: { session: Session; onExit: () => v
     const answered = correct + wrong;
     return (
       <>
-        <PageHeader title="Practice complete" description="Every attempt is saved to your progress." />
-        <div className="surface p-5">
+        <PageHeader
+          eyebrow="Session complete"
+          title="Practice complete"
+          description="Every attempt is saved to your progress."
+        />
+        <div className="clay reveal bg-primary p-5 text-primary-foreground">
           <div className="grid grid-cols-3 gap-3 text-center">
-            <div>
-              <p className="font-display text-2xl font-semibold text-success">{correct}</p>
-              <p className="text-xs text-muted-foreground">Correct</p>
+            <div className="clay-sm bg-card p-3 text-foreground">
+              <p className="font-display text-2xl leading-none">{correct}</p>
+              <p className="mt-1 text-[11px] font-bold uppercase text-muted-foreground">Correct</p>
             </div>
-            <div>
-              <p className="font-display text-2xl font-semibold text-destructive">{wrong}</p>
-              <p className="text-xs text-muted-foreground">Wrong</p>
+            <div className="clay-sm bg-card p-3 text-foreground">
+              <p className="font-display text-2xl leading-none">{wrong}</p>
+              <p className="mt-1 text-[11px] font-bold uppercase text-muted-foreground">Wrong</p>
             </div>
-            <div>
-              <p className="font-display text-2xl font-semibold">
+            <div className="clay-sm bg-card p-3 text-foreground">
+              <p className="font-display text-2xl leading-none">
                 {answered ? Math.round((correct / answered) * 100) : 0}%
               </p>
-              <p className="text-xs text-muted-foreground">Accuracy</p>
+              <p className="mt-1 text-[11px] font-bold uppercase text-muted-foreground">Accuracy</p>
             </div>
           </div>
-          <Button className="mt-5 w-full" onClick={onExit}>
+          <Button variant="secondary" className="mt-5 w-full" onClick={onExit}>
             Back to practice setup
           </Button>
         </div>

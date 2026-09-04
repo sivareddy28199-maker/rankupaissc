@@ -111,17 +111,20 @@ function AuthPage() {
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-background px-4 py-10">
-      <Link to="/" className="mb-6 flex items-center gap-2">
-        <span className="grid size-9 place-items-center rounded-xl bg-primary text-primary-foreground">
+      <Link
+        to="/"
+        className="press mb-6 flex items-center gap-2.5 rounded-full border-2 border-border bg-card px-4 py-2 shadow-[3px_3px_0_0_var(--ink)]"
+      >
+        <span className="grid size-9 place-items-center rounded-full border-2 border-border bg-primary text-primary-foreground">
           <GraduationCap className="size-5" aria-hidden />
         </span>
-        <span className="font-display text-xl font-semibold">RankUp AI</span>
+        <span className="font-display text-xl font-extrabold">RankUp AI</span>
       </Link>
 
-      <div className="surface w-full max-w-sm p-5">
+      <div className="surface reveal w-full max-w-sm p-5 shadow-[6px_7px_0_0_var(--ink)]">
         {forgot ? (
           <>
-            <h1 className="font-display text-lg font-semibold">Reset your password</h1>
+            <h1 className="font-display text-2xl leading-tight">Reset your password</h1>
             <p className="mt-1 text-sm text-muted-foreground">
               We will email you a secure reset link.
             </p>

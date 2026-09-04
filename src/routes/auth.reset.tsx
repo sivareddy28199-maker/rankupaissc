@@ -41,8 +41,11 @@ function ResetPage() {
 
   return (
     <div className="flex min-h-screen items-center justify-center px-4">
-      <form className="surface w-full max-w-sm p-5" onSubmit={submit}>
-        <h1 className="font-display text-lg font-semibold">Choose a new password</h1>
+      <form
+        className="surface reveal w-full max-w-sm p-5 shadow-[6px_7px_0_0_var(--ink)]"
+        onSubmit={submit}
+      >
+        <h1 className="font-display text-2xl leading-tight">Choose a new password</h1>
         <p className="mt-1 text-sm text-muted-foreground">
           Open this page from the reset link in your email.
         </p>
