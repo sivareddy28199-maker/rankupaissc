@@ -188,7 +188,7 @@ export const subjectsQuery = queryOptions({
 
 /** Warm the cache for the routes a user is most likely to open next. */
 export function prefetchForPath(queryClient: QueryClient, path: string) {
-  const map: Record<string, Array<Parameters<QueryClient["prefetchQuery"]>[0]>> = {
+  const map: Record<string, any[]> = {
     "/dashboard": [dashboardStatsQuery, profileQuery],
     "/practice": [subjectsQuery],
     "/tests": [testsQuery, testAttemptsQuery],
