@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { supabase } from "@/integrations/supabase/client";
+import { subjectsQuery } from "@/lib/queries";
 import { PageHeader } from "@/components/AppShell";
 import { EmptyState, ErrorState, LoadingState } from "@/components/States";
 import { QuestionCard, type QuestionShape } from "@/components/QuestionCard";
@@ -54,17 +55,7 @@ function PracticePage() {
   const [count, setCount] = useState<number>(10);
   const [session, setSession] = useState<Session | null>(null);
 
-  const subjects = useQuery({
-    queryKey: ["subjects"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("subjects")
-        .select("id, name, exam_id")
-        .order("sort_order");
-      if (error) throw error;
-      return data;
-    },
-  });
+  const subjects = useQuery(subjectsQuery);
 
   const topics = useQuery({
     queryKey: ["topics", subjectId],
@@ -138,7 +129,7 @@ function PracticePage() {
     );
   }
 
-  if (subjects.isLoading) return <LoadingState label="Loading subjects…" />;
+  if (subjects.isLoading && !subjects.data) return <LoadingState label="Loading subjects…" />;
   if (subjects.isError) return <ErrorState onRetry={() => subjects.refetch()} />;
   if (!subjects.data?.length)
     return <EmptyState title="No subjects yet" description="Content is still being added." />;

@@ -5,6 +5,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 
 import { supabase } from "@/integrations/supabase/client";
+import { bookmarksQuery, revisionDueQuery } from "@/lib/queries";
 import { PageHeader } from "@/components/AppShell";
 import { StatCard } from "@/components/kit";
 import { EmptyState, ErrorState, LoadingState } from "@/components/States";
@@ -36,32 +37,8 @@ const QUESTION_SELECT =
 function RevisionPage() {
   const queryClient = useQueryClient();
 
-  const due = useQuery({
-    queryKey: ["revision-due"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("revision_items")
-        .select(`id, user_id, question_id, next_review_date, questions(${QUESTION_SELECT})`)
-        .lte("next_review_date", new Date().toISOString().slice(0, 10))
-        .order("next_review_date")
-        .limit(30);
-      if (error) throw error;
-      return data;
-    },
-  });
-
-  const bookmarks = useQuery({
-    queryKey: ["bookmarks"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("bookmarks")
-        .select(`id, questions(${QUESTION_SELECT})`)
-        .order("created_at", { ascending: false })
-        .limit(50);
-      if (error) throw error;
-      return data;
-    },
-  });
+  const due = useQuery(revisionDueQuery);
+  const bookmarks = useQuery(bookmarksQuery);
 
   const loadKeys = useServerFn(getAttemptedAnswerKeys);
   const bookmarkKeys = useQuery({

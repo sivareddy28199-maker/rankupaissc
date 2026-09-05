@@ -12,7 +12,7 @@ import {
   Trophy,
 } from "lucide-react";
 
-import { supabase } from "@/integrations/supabase/client";
+import { dashboardStatsQuery } from "@/lib/queries";
 import { useProfile } from "@/hooks/useProfile";
 import { PageHeader } from "@/components/AppShell";
 import { ErrorState, LoadingState } from "@/components/States";
@@ -40,44 +40,6 @@ function greeting() {
   return "Good evening";
 }
 
-async function loadStats() {
-  const { data: auth } = await supabase.auth.getUser();
-  const userId = auth.user?.id;
-  if (!userId) throw new Error("Not signed in");
-  const today = new Date().toISOString().slice(0, 10);
-
-  const [goal, answers, attempts, minutes] = await Promise.all([
-    supabase.from("daily_goals").select("*").eq("user_id", userId).eq("goal_date", today).maybeSingle(),
-    supabase.from("practice_answers").select("is_correct").eq("user_id", userId),
-    supabase
-      .from("test_attempts")
-      .select("score, max_marks, accuracy, status")
-      .eq("user_id", userId)
-      .eq("status", "submitted"),
-    supabase.from("study_sessions").select("minutes").eq("user_id", userId),
-  ]);
-
-  const rows = answers.data ?? [];
-  const submitted = attempts.data ?? [];
-  const avgScore = submitted.length
-    ? Math.round(
-        submitted.reduce(
-          (s, a) => s + (Number(a.max_marks) > 0 ? (Number(a.score) / Number(a.max_marks)) * 100 : 0),
-          0,
-        ) / submitted.length,
-      )
-    : 0;
-
-  return {
-    goal: goal.data,
-    questionsAttempted: rows.length,
-    accuracy: rows.length ? Math.round((rows.filter((r) => r.is_correct).length / rows.length) * 100) : 0,
-    testsCompleted: submitted.length,
-    averageScore: avgScore,
-    totalMinutes: (minutes.data ?? []).reduce((s, m) => s + (m.minutes ?? 0), 0),
-  };
-}
-
 const QUICK_ACTIONS = [
   { to: "/practice", label: "Start practice", icon: Target, tone: "primary" as const },
   { to: "/tests", label: "Mock test", icon: BookOpenCheck, tone: "sky" as const },
@@ -94,9 +56,9 @@ const TONE_CLASS: Record<string, string> = {
 
 function Dashboard() {
   const { data: profile, isLoading: profileLoading } = useProfile();
-  const stats = useQuery({ queryKey: ["dashboard-stats"], queryFn: loadStats });
+  const stats = useQuery(dashboardStatsQuery);
 
-  if (profileLoading || stats.isLoading) return <LoadingState label="Loading your dashboard…" />;
+  if ((profileLoading && !profile) || stats.isLoading) return <LoadingState label="Loading your dashboard…" />;
   if (stats.isError) return <ErrorState onRetry={() => stats.refetch()} />;
 
   const questionGoal = profile?.daily_question_goal ?? 30;
