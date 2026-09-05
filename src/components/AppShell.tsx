@@ -12,11 +12,12 @@ import {
   Target,
   User,
 } from "lucide-react";
-import type { ReactNode } from "react";
+import { useEffect, type ReactNode } from "react";
 
 import { supabase } from "@/integrations/supabase/client";
 import { useIsAdmin, useProfile } from "@/hooks/useProfile";
 import { cn } from "@/lib/utils";
+import { prefetchForPath } from "@/lib/queries";
 import { Button } from "@/components/ui/button";
 
 const NAV = [
@@ -39,6 +40,22 @@ export function AppShell({ children }: { children: ReactNode }) {
   const { data: isAdmin } = useIsAdmin();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+
+  // Warm the data for the main tabs in the background so switching is instant.
+  useEffect(() => {
+    const run = () => {
+      for (const item of NAV) prefetchForPath(queryClient, item.to);
+    };
+    const idle = (window as any).requestIdleCallback;
+    const id = idle ? idle(run, { timeout: 2000 }) : window.setTimeout(run, 600);
+    return () => {
+      const cancel = (window as any).cancelIdleCallback;
+      if (idle && cancel) cancel(id);
+      else window.clearTimeout(id);
+    };
+  }, [queryClient]);
+
+  const warm = (to: string) => () => prefetchForPath(queryClient, to);
 
   async function signOut() {
     await queryClient.cancelQueries();
@@ -73,6 +90,10 @@ export function AppShell({ children }: { children: ReactNode }) {
               <Link
                 key={item.to}
                 to={item.to}
+                preload="intent"
+                onMouseEnter={warm(item.to)}
+                onFocus={warm(item.to)}
+                onTouchStart={warm(item.to)}
                 className={cn(
                   "press flex items-center gap-3 rounded-xl border-2 px-3 py-2.5 text-sm font-bold transition-all duration-200",
                   active
@@ -155,6 +176,9 @@ export function AppShell({ children }: { children: ReactNode }) {
             <Link
               key={item.to}
               to={item.to}
+              preload="intent"
+              onTouchStart={warm(item.to)}
+              onMouseEnter={warm(item.to)}
               aria-current={active ? "page" : undefined}
               className={cn(
                 "press flex min-h-13 flex-col items-center justify-center gap-1 rounded-2xl px-1 py-1.5 text-[10px] font-bold transition-colors duration-200",
