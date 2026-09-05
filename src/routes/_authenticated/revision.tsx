@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 
+import { supabase } from "@/integrations/supabase/client";
 import { bookmarksQuery, revisionDueQuery } from "@/lib/queries";
 import { PageHeader } from "@/components/AppShell";
 import { StatCard } from "@/components/kit";
