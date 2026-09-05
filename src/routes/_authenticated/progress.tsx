@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { Clock, Flame, Percent, Target } from "lucide-react";
 
-import { supabase } from "@/integrations/supabase/client";
+import { progressQuery } from "@/lib/queries";
 import { PageHeader } from "@/components/AppShell";
 import { EmptyState, ErrorState, LoadingState } from "@/components/States";
 import { ClayCard, ClayProgress, StatCard } from "@/components/kit";
@@ -25,42 +25,7 @@ export const Route = createFileRoute("/_authenticated/progress")({
 });
 
 function ProgressPage() {
-  const stats = useQuery({
-    queryKey: ["progress"],
-    queryFn: async () => {
-      const { data: auth } = await supabase.auth.getUser();
-      const userId = auth.user?.id;
-      if (!userId) throw new Error("Not signed in");
-
-      const [answers, goals, attempts] = await Promise.all([
-        supabase
-          .from("practice_answers")
-          .select("is_correct, time_taken_seconds, questions(subjects(name), topics(name))")
-          .eq("user_id", userId)
-          .limit(1000),
-        supabase
-          .from("daily_goals")
-          .select("goal_date, questions_done, minutes_done, question_goal")
-          .eq("user_id", userId)
-          .order("goal_date", { ascending: false })
-          .limit(14),
-        supabase
-          .from("test_attempts")
-          .select("accuracy, score, max_marks, submitted_at")
-          .eq("user_id", userId)
-          .eq("status", "submitted")
-          .order("submitted_at", { ascending: false })
-          .limit(10),
-      ]);
-
-      if (answers.error) throw answers.error;
-      return {
-        answers: answers.data ?? [],
-        goals: goals.data ?? [],
-        attempts: attempts.data ?? [],
-      };
-    },
-  });
+  const stats = useQuery(progressQuery);
 
   if (stats.isLoading) return <LoadingState label="Crunching your numbers…" />;
   if (stats.isError) return <ErrorState onRetry={() => stats.refetch()} />;

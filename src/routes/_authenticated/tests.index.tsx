@@ -2,7 +2,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowRight, Clock, ListChecks, Timer } from "lucide-react";
 
-import { supabase } from "@/integrations/supabase/client";
+import { testAttemptsQuery, testsQuery } from "@/lib/queries";
 import { PageHeader } from "@/components/AppShell";
 import { EmptyState, ErrorState, LoadingState } from "@/components/States";
 import { ClayCard, Chip } from "@/components/kit";
@@ -30,34 +30,8 @@ const CARD_TONES = ["primary", "sky", "coral", "warning"] as const;
 function TestsPage() {
   const navigate = useNavigate();
 
-  const tests = useQuery({
-    queryKey: ["tests"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("tests")
-        .select("id, title, description, test_type, duration_minutes, total_questions")
-        .eq("is_published", true)
-        .order("created_at", { ascending: false });
-      if (error) throw error;
-      return data;
-    },
-  });
-
-  const attempts = useQuery({
-    queryKey: ["test-attempts"],
-    queryFn: async () => {
-      const { data: auth } = await supabase.auth.getUser();
-      if (!auth.user) return [];
-      const { data, error } = await supabase
-        .from("test_attempts")
-        .select("id, test_id, status, score, max_marks, accuracy, submitted_at, tests(title)")
-        .eq("user_id", auth.user.id)
-        .order("started_at", { ascending: false })
-        .limit(20);
-      if (error) throw error;
-      return data;
-    },
-  });
+  const tests = useQuery(testsQuery);
+  const attempts = useQuery(testAttemptsQuery);
 
   if (tests.isLoading) return <LoadingState label="Loading tests…" />;
   if (tests.isError) return <ErrorState onRetry={() => tests.refetch()} />;
