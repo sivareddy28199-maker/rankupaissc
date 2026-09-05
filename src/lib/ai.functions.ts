@@ -317,3 +317,185 @@ export const analyzePerformance = createServerFn({ method: "POST" })
       };
     });
   });
+
+/* ------------------------------------------------------------------ */
+/* Coach chat: one persisted conversation stream for every AI mode.     */
+/* ------------------------------------------------------------------ */
+
+const COACH_MODES = ["tutor", "notes", "questions", "plan"] as const;
+export type CoachMode = (typeof COACH_MODES)[number];
+
+function questionsToMarkdown(questions: { question_text: string; options: string[]; correct_answer: string; explanation: string }[]) {
+  return questions
+    .map((q, i) => {
+      const opts = q.options
+        .map((o, oi) => `${String.fromCharCode(65 + oi)}. ${o}${o === q.correct_answer ? "  ✅" : ""}`)
+        .join("\n");
+      return `**Q${i + 1}. ${q.question_text}**\n\n${opts}\n\n_${q.explanation}_`;
+    })
+    .join("\n\n---\n\n");
+}
+
+/**
+ * Sends one message in a coach conversation. Works for every mode and always
+ * persists the user message and the assistant reply against the signed-in user.
+ */
+export const sendCoachMessage = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) =>
+    z
+      .object({
+        conversationId: z.string().uuid().nullable().default(null),
+        mode: z.enum(COACH_MODES).default("tutor"),
+        message: z.string().min(2).max(4000),
+        subject: z.string().max(120).optional(),
+        difficulty: z.enum(["easy", "medium", "hard"]).default("medium"),
+        dailyMinutes: z.number().int().min(15).max(720).default(90),
+        targetDate: z.string().max(20).nullable().default(null),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+
+    let conversationId = data.conversationId;
+    if (!conversationId) {
+      const { data: conv, error } = await supabase
+        .from("ai_conversations")
+        .insert({ user_id: userId, title: data.message.slice(0, 60), kind: data.mode })
+        .select("id")
+        .single();
+      if (error) throw new Error("Could not start the conversation.");
+      conversationId = conv.id as string;
+    }
+
+    const { data: history } = await supabase
+      .from("ai_messages")
+      .select("role, content")
+      .eq("conversation_id", conversationId)
+      .order("created_at", { ascending: true })
+      .limit(20);
+
+    await supabase.from("ai_messages").insert({
+      conversation_id: conversationId,
+      user_id: userId,
+      role: "user",
+      content: data.message,
+    });
+
+    const ctx = await buildLearnerContext(supabase, userId);
+    let reply: string;
+
+    if (data.mode === "notes") {
+      const content = await guarded(supabase, userId, "generateNotes", async () => {
+        const completion = await runCompletion({
+          messages: [
+            { role: "system", content: NOTES_SYSTEM },
+            {
+              role: "user",
+              content: `Exam: ${ctx.examName}. Subject: ${data.subject ?? "general"}. Topic: ${data.message}. Difficulty: ${data.difficulty}.`,
+            },
+          ],
+        });
+        return {
+          result: completion.text,
+          provider: completion.provider,
+          model: completion.model,
+          tokensUsed: completion.tokensUsed,
+        };
+      });
+      await supabase.from("ai_notes").insert({
+        user_id: userId,
+        title: data.message.slice(0, 120),
+        topic: data.message.slice(0, 120),
+        subject: data.subject ?? null,
+        difficulty: data.difficulty,
+        content,
+      });
+      reply = content;
+    } else if (data.mode === "questions") {
+      const raw = await guarded(supabase, userId, "generateQuestions", async () => {
+        const completion = await runCompletion({
+          json: true,
+          messages: [
+            { role: "system", content: QUESTION_SYSTEM },
+            {
+              role: "user",
+              content: `Generate 5 ${data.difficulty} MCQs for ${ctx.examName}, subject ${data.subject ?? "general"}, topic ${data.message}.`,
+            },
+          ],
+        });
+        return {
+          result: completion.text,
+          provider: completion.provider,
+          model: completion.model,
+          tokensUsed: completion.tokensUsed,
+        };
+      });
+      let parsed: { questions?: unknown[] };
+      try {
+        parsed = parseJsonResponse<{ questions?: unknown[] }>(raw);
+      } catch {
+        throw new Error("The AI returned questions in an unreadable format. Try again.");
+      }
+      const valid = validateGeneratedQuestions(parsed.questions ?? []);
+      if (valid.length === 0) throw new Error("The AI could not produce valid questions this time. Please retry.");
+      reply = questionsToMarkdown(valid);
+    } else if (data.mode === "plan") {
+      const content = await guarded(supabase, userId, "generateStudyPlan", async () => {
+        const completion = await runCompletion({
+          messages: [
+            { role: "system", content: PLAN_SYSTEM },
+            {
+              role: "user",
+              content: `${learnerBrief(ctx)}\nExam date: ${data.targetDate ?? "not fixed"}. Available daily minutes: ${data.dailyMinutes}.\nRequest: ${data.message}`,
+            },
+          ],
+        });
+        return {
+          result: completion.text,
+          provider: completion.provider,
+          model: completion.model,
+          tokensUsed: completion.tokensUsed,
+        };
+      });
+      await supabase.from("ai_study_plans").update({ is_active: false }).eq("user_id", userId);
+      await supabase.from("ai_study_plans").insert({
+        user_id: userId,
+        exam_code: ctx.examName,
+        target_date: data.targetDate,
+        daily_minutes: data.dailyMinutes,
+        content,
+      });
+      reply = content;
+    } else {
+      reply = await guarded(supabase, userId, "solveDoubt", async () => {
+        const completion = await runCompletion({
+          messages: [
+            { role: "system", content: `${TUTOR_SYSTEM}\n\nLearner profile:\n${learnerBrief(ctx)}` },
+            ...((history ?? []) as { role: "user" | "assistant"; content: string }[]),
+            { role: "user", content: data.message },
+          ],
+        });
+        return {
+          result: completion.text,
+          provider: completion.provider,
+          model: completion.model,
+          tokensUsed: completion.tokensUsed,
+        };
+      });
+    }
+
+    await supabase.from("ai_messages").insert({
+      conversation_id: conversationId,
+      user_id: userId,
+      role: "assistant",
+      content: reply,
+    });
+    await supabase
+      .from("ai_conversations")
+      .update({ updated_at: new Date().toISOString() })
+      .eq("id", conversationId);
+
+    return { conversationId, reply };
+  });
