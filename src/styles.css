@@ -293,6 +293,11 @@
   }
 }
 
+/* Fast, lightweight page transition for mobile-native feel */
+.page-enter {
+  animation: rise 0.3s var(--ease-tactile) both;
+}
+
 @utility reveal {
   animation: rise 0.5s var(--ease-tactile) both;
 }
