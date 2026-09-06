@@ -1,13 +1,15 @@
 import { gatewayProvider } from "./gateway";
+import { openRouterProvider } from "./openrouter";
 import { oxAlphaProvider } from "./oxalpha";
 import type { AiProvider, CompletionRequest, CompletionResult } from "./types";
 import { AiUnavailableError } from "./types";
 
 /**
- * Provider chain: Ox Alpha first when configured, hosted gateway as fallback.
- * Adding a vendor = implement AiProvider and push it into this list.
+ * Provider chain: OpenRouter (free-model fallback chain) first, then Ox Alpha,
+ * then the hosted gateway. Adding a vendor = implement AiProvider and push it
+ * into this list — no other application code changes.
  */
-const PROVIDERS: AiProvider[] = [oxAlphaProvider, gatewayProvider];
+const PROVIDERS: AiProvider[] = [openRouterProvider, oxAlphaProvider, gatewayProvider];
 
 export function activeProviders(): AiProvider[] {
   return PROVIDERS.filter((p) => p.isConfigured());
@@ -17,9 +19,7 @@ export function activeProviders(): AiProvider[] {
 export async function runCompletion(request: CompletionRequest): Promise<CompletionResult> {
   const providers = activeProviders();
   if (providers.length === 0) {
-    throw new AiUnavailableError(
-      "No AI provider is configured. Add OX_ALPHA_API_KEY or enable the built-in AI gateway.",
-    );
+    throw new AiUnavailableError("AI is not available right now. Please try again later.");
   }
   let lastError: unknown;
   for (const provider of providers) {
@@ -30,7 +30,8 @@ export async function runCompletion(request: CompletionRequest): Promise<Complet
       console.error(`[ai] provider "${provider.name}" failed:`, error);
     }
   }
-  throw lastError instanceof AiUnavailableError ? lastError : new AiUnavailableError();
+  console.error("[ai] every provider failed", lastError);
+  throw new AiUnavailableError();
 }
 
 /** Parses a JSON payload out of a model response, tolerating code fences. */
