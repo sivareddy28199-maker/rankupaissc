@@ -14,6 +14,7 @@ import {
   TUTOR_SYSTEM,
   learnerBrief,
 } from "./ai/prompts";
+import { MOCK_BLUEPRINT } from "./config";
 import {
   buildLearnerContext,
   getExistingQuestionTexts,
@@ -256,10 +257,28 @@ export const generateQuestions = createServerFn({ method: "POST" })
     throw new Error("The AI could not produce valid questions this time. Please try again.");
   });
 
-/** SSC CGL Daily Mock Test — 100 questions, balanced, de-duplicated, validated. */
+/** SSC CGL Mock Test — configurable by blueprint, validated, de-duplicated. */
 export const generateDailyMock = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .handler(async ({ context }) => {
+  .inputValidator((input: unknown) =>
+    z
+      .object({
+        blueprintType: z.enum(["tier-i-mock", "practice", "topic-test", "sectional-test"]).default("tier-i-mock"),
+        customSections: z
+          .array(
+            z.object({
+              subject: z.string().max(120),
+              questions: z.number().int().min(1).max(100),
+              easy: z.number().int().optional(),
+              medium: z.number().int().optional(),
+              hard: z.number().int().optional(),
+            }),
+          )
+          .optional(),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
     const existingTexts = await getExistingQuestionTexts(supabase, userId);
 
@@ -270,12 +289,27 @@ export const generateDailyMock = createServerFn({ method: "POST" })
         ? `\n\nVALIDATION ERROR: ${lastError}. Please correct.`
         : "";
 
+      const blueprint = data.blueprintType === "tier-i-mock" ? MOCK_BLUEPRINT :
+        data.blueprintType === "topic-test" ? { exam: "SSC-CGL", testType: "topic-test", totalQuestions: 20, durationMinutes: 30, scoring: MOCK_BLUEPRINT.scoring, sections: data.customSections ?? [{ subject: "Quantitative Aptitude", questions: 20 }] } :
+        data.blueprintType === "sectional-test" ? { exam: "SSC-CGL", testType: "sectional-test", totalQuestions: 25, durationMinutes: 25, scoring: MOCK_BLUEPRINT.scoring, sections: data.customSections ?? [{ subject: "Quantitative Aptitude", questions: 25 }] } :
+        data.blueprintType === "practice" ? { exam: "SSC-CGL", testType: "practice", totalQuestions: 30, durationMinutes: 45, scoring: MOCK_BLUEPRINT.scoring, sections: data.customSections ?? [
+          { subject: "Quantitative Aptitude", questions: 8 },
+          { subject: "General Intelligence & Reasoning", questions: 7 },
+          { subject: "English Language & Comprehension", questions: 8 },
+          { subject: "General Awareness", questions: 7 },
+        ] } :
+        MOCK_BLUEPRINT;
+
+      const blueprintStr = blueprint.sections
+        .map((s) => `- ${s.subject}: ${s.questions} questions` + (s.easy ? ` (Easy: ${s.easy}, Medium: ${s.medium}, Hard: ${s.hard})` : ""))
+        .join("\n");
+
       const raw = await guarded(supabase, userId, "generateDailyMock", async () => {
         const completion = await runCompletion({
           json: true,
           messages: [
             { role: "system", content: MOCK_SYSTEM },
-            { role: "user", content: `Generate today's SSC CGL Tier-I mock with exactly 100 questions.${correction}` },
+            { role: "user", content: `Generate an SSC CGL mock (${blueprint.testType}) with the following blueprint (${blueprint.totalQuestions} total questions, ${blueprint.durationMinutes} min):\n${blueprintStr}\nDifficulty mix: easy/medium/hard per section. ${correction}` },
           ],
         });
         return {

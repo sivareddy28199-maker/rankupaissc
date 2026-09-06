@@ -35,3 +35,18 @@ export const PRACTICE_SIZES = [5, 10, 20, 30] as const;
 export function dailyLimitFor(tier: string | null | undefined) {
   return AI_DAILY_LIMITS[tier ?? "free"] ?? AI_DAILY_LIMITS["free"]!;
 }
+
+/** SSC CGL Tier-I Mock blueprint — configurable, not hardcoded. */
+export const MOCK_BLUEPRINT = {
+  exam: "SSC-CGL",
+  testType: "tier-i-mock",
+  totalQuestions: 100,
+  durationMinutes: 60,
+  scoring: { correct: 2, wrong: -0.5, skipped: 0 },
+  sections: [
+    { subject: "Quantitative Aptitude", questions: 25, easy: 8, medium: 12, hard: 5 },
+    { subject: "General Intelligence & Reasoning", questions: 25, easy: 8, medium: 12, hard: 5 },
+    { subject: "English Language & Comprehension", questions: 25, easy: 8, medium: 12, hard: 5 },
+    { subject: "General Awareness", questions: 25, easy: 8, medium: 12, hard: 5 },
+  ],
+} as const;
