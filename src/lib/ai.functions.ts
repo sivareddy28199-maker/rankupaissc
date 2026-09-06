@@ -5,14 +5,22 @@ import { z } from "zod";
 import { runCompletion, parseJsonResponse, activeProviders } from "./ai/provider";
 import {
   ANALYSIS_SYSTEM,
+  CLASSIFY_SYSTEM,
   COACH_SYSTEM,
+  MOCK_SYSTEM,
   NOTES_SYSTEM,
-  PLAN_SYSTEM,
+  PRACTICE_SYSTEM,
   QUESTION_SYSTEM,
   TUTOR_SYSTEM,
   learnerBrief,
 } from "./ai/prompts";
-import { buildLearnerContext, guarded, validateGeneratedQuestions } from "./ai.server";
+import {
+  buildLearnerContext,
+  getExistingQuestionTexts,
+  guarded,
+  validateGeneratedQuestions,
+} from "./ai.server";
+import { SSC_SYLLABUS } from "./ssc";
 
 /** Current AI usage + provider status for the signed-in learner. */
 export const getAiStatus = createServerFn({ method: "GET" })
@@ -176,7 +184,7 @@ export const generateNotes = createServerFn({ method: "POST" })
     return note;
   });
 
-/** AI question generator — output is validated before it is trusted or saved. */
+/** AI question generator — validated, de-duplicated, retry-with-correction. */
 export const generateQuestions = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) =>
@@ -192,38 +200,257 @@ export const generateQuestions = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
-    const raw = await guarded(supabase, userId, "generateQuestions", async () => {
-      const completion = await runCompletion({
-        json: true,
-        messages: [
-          { role: "system", content: QUESTION_SYSTEM },
-          {
-            role: "user",
-            content: `Generate ${data.count} ${data.difficulty} MCQs for ${data.exam}, subject ${data.subject}, topic ${data.topic}.`,
-          },
-        ],
+
+    const existingTexts = await getExistingQuestionTexts(supabase, userId, data.subject, data.topic);
+
+    let lastError: string | null = null;
+
+    for (let attempt = 0; attempt < 3; attempt++) {
+      const correction = attempt > 0
+        ? `\n\nVALIDATION ERROR from previous attempt: ${lastError}. Please correct and regenerate.`
+        : "";
+
+      const raw = await guarded(supabase, userId, "generateQuestions", async () => {
+        const completion = await runCompletion({
+          json: true,
+          messages: [
+            { role: "system", content: QUESTION_SYSTEM },
+            {
+              role: "user",
+              content: `Generate ${data.count} ${data.difficulty} MCQs for ${data.exam}, subject "${data.subject}", topic "${data.topic}".${correction}`,
+            },
+          ],
+        });
+        return {
+          result: completion.text,
+          provider: completion.provider,
+          model: completion.model,
+          tokensUsed: completion.tokensUsed,
+        };
       });
+
+      let parsed: { questions?: unknown[] };
+      try {
+        parsed = parseJsonResponse<{ questions?: unknown[] }>(raw);
+      } catch {
+        lastError = "AI returned invalid JSON format.";
+        if (attempt === 2) throw new Error("The AI returned questions in an unreadable format. Please try again.");
+        continue;
+      }
+
+      const valid = validateGeneratedQuestions(parsed.questions ?? [], existingTexts);
+
+      if (valid.length === 0) {
+        lastError = `All ${(parsed.questions ?? []).length} questions failed validation (shape, subject/topic mismatch, duplicate, or incorrect answer).`;
+        if (attempt === 2) throw new Error("The AI could not produce valid questions this time. Please try again.");
+        continue;
+      }
+
       return {
-        result: completion.text,
-        provider: completion.provider,
-        model: completion.model,
-        tokensUsed: completion.tokensUsed,
+        questions: valid,
+        rejected: (parsed.questions ?? []).length - valid.length,
+        attempts: attempt + 1,
       };
-    });
-
-    let parsed: { questions?: unknown[] };
-    try {
-      parsed = parseJsonResponse<{ questions?: unknown[] }>(raw);
-    } catch {
-      throw new Error("The AI returned questions in an unreadable format. Try again.");
     }
 
-    const valid = validateGeneratedQuestions(parsed.questions ?? []);
+    throw new Error("The AI could not produce valid questions this time. Please try again.");
+  });
 
-    if (valid.length === 0) {
-      throw new Error("The AI could not produce valid questions this time. Please retry.");
+/** SSC CGL Daily Mock Test — 100 questions, balanced, de-duplicated, validated. */
+export const generateDailyMock = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { supabase, userId } = context;
+    const existingTexts = await getExistingQuestionTexts(supabase, userId);
+
+    let lastError: string | null = null;
+
+    for (let attempt = 0; attempt < 3; attempt++) {
+      const correction = attempt > 0
+        ? `\n\nVALIDATION ERROR: ${lastError}. Please correct.`
+        : "";
+
+      const raw = await guarded(supabase, userId, "generateDailyMock", async () => {
+        const completion = await runCompletion({
+          json: true,
+          messages: [
+            { role: "system", content: MOCK_SYSTEM },
+            { role: "user", content: `Generate today's SSC CGL Tier-I mock with exactly 100 questions.${correction}` },
+          ],
+        });
+        return {
+          result: completion.text,
+          provider: completion.provider,
+          model: completion.model,
+          tokensUsed: completion.tokensUsed,
+        };
+      });
+
+      let parsed: { questions?: unknown[] };
+      try {
+        parsed = parseJsonResponse<{ questions?: unknown[] }>(raw);
+      } catch {
+        lastError = "Invalid JSON.";
+        if (attempt === 2) throw new Error("Mock generation failed. Please try again.");
+        continue;
+      }
+
+      const questions = parsed.questions ?? [];
+      const valid = validateGeneratedQuestions(questions, existingTexts);
+
+      if (valid.length < 60) {
+        lastError = `Only ${valid.length} of ${questions.length} questions passed validation. Need 60+ valid.`;
+        if (attempt === 2) throw new Error("Mock generation failed quality check after 3 attempts.");
+        continue;
+      }
+
+      const { data: subjects } = await supabase.from("subjects").select("id, name");
+      const subjectMap = new Map((subjects ?? []).map((s: any) => [s.name, s.id] as const));
+      const questionIds: string[] = [];
+
+      for (const q of valid) {
+        const subjectName = (q as any).subject || (q as any).validatedSubject;
+        const subjectId = subjectMap.get(subjectName);
+        if (!subjectId) continue;
+        const { data: inserted, error } = await supabase
+          .from("questions")
+          .insert({
+            question_text: q.question_text,
+            question_type: "mcq",
+            options: q.options,
+            correct_answer: q.correct_answer,
+            explanation: q.explanation,
+            difficulty: q.difficulty,
+            subject_id: subjectId,
+            source: "ai-mock",
+            is_published: false,
+          })
+          .select("id")
+          .single();
+        if (!error && inserted) questionIds.push(inserted.id);
+      }
+
+      if (questionIds.length < 30) {
+        lastError = "Could not save enough mock questions.";
+        if (attempt === 2) throw new Error("Mock generation failed during save.");
+        continue;
+      }
+
+      const { data: test, error: testErr } = await supabase
+        .from("tests")
+        .insert({
+          title: `Daily SSC CGL Mock — ${new Date().toLocaleDateString(undefined, { day: "numeric", month: "short" })}`,
+          description: "AI-generated daily SSC CGL Tier-I mock with 4-section balance.",
+          test_type: "mock",
+          duration_minutes: 60,
+          total_questions: questionIds.length,
+          is_published: true,
+          subject_id: null,
+          topic_id: null,
+        })
+        .select("*")
+        .single();
+      if (testErr || !test) {
+        throw new Error("Mock was generated but the test record could not be saved.");
+      }
+
+      await supabase.from("test_questions").insert(
+        questionIds.map((qid, idx) => ({ test_id: test.id, question_id: qid, position: idx })),
+      );
+
+      return { test, questionCount: questionIds.length };
     }
-    return { questions: valid, rejected: (parsed.questions ?? []).length - valid.length };
+
+    throw new Error("Mock generation failed after multiple attempts.");
+  });
+
+/** Personalised practice using the learner's weak topics. */
+export const generatePersonalisedPractice = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) =>
+    z
+      .object({
+        mode: z.enum(["topic", "weak", "mixed", "difficulty"]).default("mixed"),
+        subject: z.string().max(120).optional(),
+        topic: z.string().max(120).optional(),
+        difficulty: z.enum(["easy", "medium", "hard"]).default("medium"),
+        count: z.number().int().min(5).max(20).default(10),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    const ctx = await buildLearnerContext(supabase, userId);
+
+    let subject = data.subject;
+    let topic = data.topic;
+    let difficulty = data.difficulty;
+
+    if (data.mode === "weak" && ctx.weakTopics.length) {
+      const first = ctx.weakTopics[0].split(" (")[0];
+      topic = first;
+    }
+
+    if (data.mode === "difficulty") {
+      difficulty = data.difficulty;
+    }
+
+    if (!subject) {
+      if (data.mode === "weak" && topic) {
+        for (const [s, topics] of Object.entries(SSC_SYLLABUS)) {
+          if (topics.some((t) => t.toLowerCase() === topic!.toLowerCase())) {
+            subject = s;
+            break;
+          }
+        }
+      }
+      subject = subject ?? "Quantitative Aptitude";
+    }
+
+    const existingTexts = await getExistingQuestionTexts(supabase, userId, subject, topic);
+
+    let lastError: string | null = null;
+    for (let attempt = 0; attempt < 2; attempt++) {
+      const correction = attempt > 0 ? `\n\nFIX: ${lastError}` : "";
+      const raw = await guarded(supabase, userId, "generatePersonalisedPractice", async () => {
+        const completion = await runCompletion({
+          json: true,
+          messages: [
+            { role: "system", content: PRACTICE_SYSTEM },
+            {
+              role: "user",
+              content: `Mode: ${data.mode}. Subject: ${subject}. Topic: ${topic ?? "any"}. Difficulty: ${difficulty}. Count: ${data.count}.${correction}`,
+            },
+          ],
+        });
+        return {
+          result: completion.text,
+          provider: completion.provider,
+          model: completion.model,
+          tokensUsed: completion.tokensUsed,
+        };
+      });
+
+      let parsed: { questions?: unknown[] };
+      try {
+        parsed = parseJsonResponse<{ questions?: unknown[] }>(raw);
+      } catch {
+        lastError = "Invalid JSON";
+        if (attempt === 1) throw new Error("Practice generation failed.");
+        continue;
+      }
+
+      const valid = validateGeneratedQuestions(parsed.questions ?? [], existingTexts);
+      if (valid.length === 0) {
+        lastError = "All questions failed validation.";
+        if (attempt === 1) throw new Error("Practice generation failed quality check.");
+        continue;
+      }
+
+      return { questions: valid, mode: data.mode, subject, topic, difficulty };
+    }
+
+    throw new Error("Practice generation failed.");
   });
 
 /** Long-term study plan generated from the learner's real state. */
