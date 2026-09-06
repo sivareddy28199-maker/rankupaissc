@@ -7,9 +7,14 @@
 import { defineConfig } from "@lovable.dev/vite-tanstack-config";
 
 export default defineConfig({
-  server: {
-    host: true,
-    allowedHosts: ["e2b.app", ".e2b.app", ".localhost", "."],
+  vite: {
+    server: {
+      host: true,
+      allowedHosts: true,
+    },
+    preview: {
+      allowedHosts: true,
+    },
   },
   tanstackStart: {
     // Redirect TanStack Start's bundled server entry to src/server.ts (our SSR error wrapper).
