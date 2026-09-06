@@ -15,7 +15,7 @@ export const FEATURE_FLAGS = {
   aiDoubtSolver: true,
   aiNotes: true,
   aiQuestionGenerator: true,
-  aiStudyPlan: true,
+  aiStudyPlan: false,
   aiPerformanceAnalysis: true,
   premiumAnalytics: false,
   notifications: false,

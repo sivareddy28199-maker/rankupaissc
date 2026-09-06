@@ -322,7 +322,7 @@ export const analyzePerformance = createServerFn({ method: "POST" })
 /* Coach chat: one persisted conversation stream for every AI mode.     */
 /* ------------------------------------------------------------------ */
 
-const COACH_MODES = ["tutor", "notes", "questions", "plan"] as const;
+const COACH_MODES = ["tutor", "notes", "questions"] as const;
 export type CoachMode = (typeof COACH_MODES)[number];
 
 function questionsToMarkdown(questions: { question_text: string; options: string[]; correct_answer: string; explanation: string }[]) {

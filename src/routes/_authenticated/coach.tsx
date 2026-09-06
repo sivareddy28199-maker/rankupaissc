@@ -38,31 +38,24 @@ type Conversation = { id: string; title: string; kind: string; updated_at: strin
 const MODES: { value: CoachMode; label: string; icon: typeof MessageCircle; placeholder: string; tone: string }[] = [
   {
     value: "tutor",
-    label: "Tutor",
+    label: "Chat",
     icon: MessageCircle,
-    placeholder: "Ask any doubt… (Enter to send, Shift+Enter for a new line)",
+    placeholder: "Ask any SSC CGL doubt or get performance insights…",
     tone: "bg-primary text-primary-foreground",
   },
   {
     value: "notes",
     label: "Notes",
     icon: BookOpen,
-    placeholder: "Topic for revision notes, e.g. Time, Speed and Distance",
+    placeholder: "Topic for revision notes, e.g. Fundamental Rights",
     tone: "bg-sky text-sky-foreground",
   },
   {
     value: "questions",
-    label: "Questions",
+    label: "Practice",
     icon: ListChecks,
-    placeholder: "Topic for 5 practice questions, e.g. Percentages",
+    placeholder: "Topic for practice questions, e.g. Percentage",
     tone: "bg-coral text-coral-foreground",
-  },
-  {
-    value: "plan",
-    label: "Plan",
-    icon: CalendarRange,
-    placeholder: "What should today / this week look like?",
-    tone: "bg-warning text-warning-foreground",
   },
 ];
 

@@ -30,13 +30,13 @@ export const Route = createFileRoute("/")({
       {
         name: "description",
         content:
-          "AI-powered preparation, adaptive practice, timed mock tests and personalised guidance built for SSC CGL and CUET PG aspirants.",
+          "AI-powered preparation, adaptive practice, timed mock tests and personalised guidance for SSC CGL aspirants.",
       },
       { property: "og:title", content: "RankUp AI — Your smarter way to rank higher" },
       {
         property: "og:description",
         content:
-          "Adaptive practice, timed mock tests, smart revision and an AI coach built for Indian competitive exams.",
+          "Adaptive practice, timed mock tests, smart revision and an AI coach built for SSC CGL aspirants.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
@@ -65,7 +65,7 @@ const TEST_CARDS = [
 
 const TESTIMONIALS = [
   { name: "Ananya R.", exam: "SSC CGL aspirant", quote: "The weak-topic list is brutally honest. My reasoning accuracy went from guesswork to a routine." },
-  { name: "Vikram S.", exam: "CUET PG", quote: "Mock tests feel like the real paper — palette, timer, marks. No surprises on exam day." },
+  { name: "Vikram S.", exam: "SSC CGL aspirant", quote: "Mock tests feel like the real paper — palette, timer, marks. No surprises on exam day." },
   { name: "Priya M.", exam: "SSC CGL aspirant", quote: "The AI coach gives me a 45-minute plan every morning. I finally stopped studying randomly." },
 ];
 
@@ -106,7 +106,7 @@ function Landing() {
         <section className="grid items-center gap-8 py-8 lg:grid-cols-2 lg:py-14">
           <div className="reveal">
             <Chip tone="coral" className="mb-4">
-              <Sparkles className="size-3.5" aria-hidden /> SSC CGL · CUET PG · more coming
+              <Sparkles className="size-3.5" aria-hidden /> SSC CGL · More coming
             </Chip>
             <h1 className="font-display text-4xl leading-[1.05] sm:text-6xl">
               Your smarter way to{" "}
@@ -327,10 +327,10 @@ function Landing() {
                 <p className="font-display text-lg">Subject strength</p>
                 <div className="mt-4 space-y-3.5">
                   {[
-                    { s: "Reasoning", v: 84 },
+                    { s: "General Intelligence & Reasoning", v: 84 },
                     { s: "General Awareness", v: 68 },
                     { s: "Quantitative Aptitude", v: 54, weak: true },
-                    { s: "English", v: 61 },
+                    { s: "English Language & Comprehension", v: 61 },
                   ].map((row) => (
                     <div key={row.s}>
                       <div className="mb-1 flex items-center justify-between gap-2 text-xs font-bold">
@@ -443,7 +443,7 @@ function Landing() {
             title="Product"
             items={["AI Coach", "Mock Tests", "Practice", "Revision", "Progress"]}
           />
-          <FooterCol title="Resources" items={["SSC CGL", "CUET PG", "Study Resources"]} />
+          <FooterCol title="Resources" items={["SSC CGL", "Study Resources"]} />
           <FooterCol title="Company" items={["About", "Contact", "Privacy", "Terms"]} />
         </div>
         <div className="border-t-2 border-border px-4 py-4 text-center text-xs text-muted-foreground">

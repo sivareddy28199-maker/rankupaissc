@@ -24,15 +24,18 @@ const NAV = [
   { to: "/dashboard", label: "Home", icon: Home },
   { to: "/practice", label: "Practice", icon: Target },
   { to: "/tests", label: "Tests", icon: BookOpenCheck },
-  { to: "/revision", label: "Revision", icon: RefreshCcw },
   { to: "/coach", label: "AI Coach", icon: Bot },
   { to: "/progress", label: "Progress", icon: BarChart3 },
   { to: "/profile", label: "Profile", icon: User },
 ] as const;
 
-const MOBILE_NAV = NAV.filter((n) =>
-  ["/dashboard", "/practice", "/tests", "/coach", "/progress"].includes(n.to),
-);
+const MOBILE_NAV = [
+  NAV.find((n) => n.to === "/dashboard")!,
+  NAV.find((n) => n.to === "/practice")!,
+  NAV.find((n) => n.to === "/coach")!,
+  NAV.find((n) => n.to === "/tests")!,
+  NAV.find((n) => n.to === "/progress")!,
+];
 
 export function AppShell({ children }: { children: ReactNode }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });

@@ -16,10 +16,10 @@ import { STUDY_LEVELS } from "@/lib/config";
 export const Route = createFileRoute("/_authenticated/profile")({
   head: () => ({
     meta: [
-      { title: "Your profile — RankUp AI" },
-      { name: "description", content: "Manage your exam target, study level, daily goals and account." },
-      { property: "og:title", content: "Your profile — RankUp AI" },
-      { property: "og:description", content: "Manage your exam target, study level and daily goals." },
+      { title: "Profile — RankUp AI" },
+      { name: "description", content: "SSC CGL profile, study settings and account." },
+      { property: "og:title", content: "Profile — RankUp AI" },
+      { property: "og:description", content: "SSC CGL preparation profile." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
     ],
@@ -33,26 +33,15 @@ function ProfilePage() {
   const { data: profile, isLoading } = useProfile();
 
   const [fullName, setFullName] = useState("");
-  const [examCode, setExamCode] = useState("SSC_CGL");
   const [level, setLevel] = useState<string>("beginner");
-  const [dailyGoal, setDailyGoal] = useState(20);
+  const [dailyGoal, setDailyGoal] = useState(30);
   const [saving, setSaving] = useState(false);
-
-  const exams = useQuery({
-    queryKey: ["exams"],
-    queryFn: async () => {
-      const { data, error } = await supabase.from("exams").select("code, name").eq("is_active", true);
-      if (error) throw error;
-      return data;
-    },
-  });
 
   useEffect(() => {
     if (!profile) return;
     setFullName(profile.full_name ?? "");
-    setExamCode((profile as any).target_exam_code ?? "SSC_CGL");
     setLevel((profile as any).study_level ?? "beginner");
-    setDailyGoal((profile as any).daily_question_goal ?? 20);
+    setDailyGoal((profile as any).daily_question_goal ?? 30);
   }, [profile]);
 
   if (isLoading) return <LoadingState />;
@@ -63,9 +52,9 @@ function ProfilePage() {
       .from("profiles")
       .update({
         full_name: fullName,
-        target_exam_code: examCode,
         study_level: level,
         daily_question_goal: dailyGoal,
+        target_exam_code: "SSC-CGL",
       })
       .eq("id", profile!.id);
     setSaving(false);
@@ -89,7 +78,7 @@ function ProfilePage() {
       <PageHeader
         eyebrow="Account"
         title="Profile"
-        description="Tune RankUp AI to your exam and pace."
+        description="Your SSC CGL preparation settings."
         action={
           <Chip tone="warning" className="capitalize">
             {profile?.plan_tier ?? "free"} plan
@@ -98,29 +87,19 @@ function ProfilePage() {
       />
 
       <ClayCard className="reveal grid gap-4" aria-label="Profile settings">
+        <div className="rounded-2xl border-2 border-border bg-card p-4 text-center">
+          <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">Exam Target</p>
+          <p className="mt-1 font-display text-xl font-extrabold">SSC CGL</p>
+          <p className="text-xs text-muted-foreground">Staff Selection Commission — Combined Graduate Level</p>
+        </div>
+
         <div className="grid gap-1.5">
           <Label htmlFor="full-name">Full name</Label>
           <Input id="full-name" value={fullName} onChange={(e) => setFullName(e.target.value)} />
         </div>
 
         <div className="grid gap-1.5">
-          <Label htmlFor="exam">Target exam</Label>
-          <select
-            id="exam"
-            className="h-11 rounded-xl border-2 border-border bg-card px-3 text-sm font-semibold shadow-[2px_2px_0_0_var(--ink)]"
-            value={examCode}
-            onChange={(e) => setExamCode(e.target.value)}
-          >
-            {exams.data?.map((exam) => (
-              <option key={exam.code} value={exam.code}>
-                {exam.name}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        <div className="grid gap-1.5">
-          <Label>Study level</Label>
+          <Label>Preparation level</Label>
           <div className="flex gap-2">
             {STUDY_LEVELS.map((option) => (
               <Button
